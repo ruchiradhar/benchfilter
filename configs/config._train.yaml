@@ -2,14 +2,14 @@
 
 models:
   model1:
-   name: meta-llama/Llama-3.2-3B-Instruct
-   hflink: "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct"
+   name: meta-llama/Llama-3.2-1B
+   hflink: https://huggingface.co/meta-llama/Llama-3.2-1B
   model2:
-    name: "Qwen/Qwen3-4B-Instruct-2507"
-    hflink: "https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507"
+    name: "Qwen/Qwen3-1.7B"
+    hflink: "https://huggingface.co/Qwen/Qwen3-1.7B"
   model3:
-    name: "tiiuae/Falcon3-3B-Instruct"
-    hflink: "https://huggingface.co/tiiuae/Falcon3-3B-Instruct"
+    name: "tiiuae/Falcon3-1B-Base"
+    hflink: "https://huggingface.co/tiiuae/Falcon3-1B-Base"
 
 
 datasets:
