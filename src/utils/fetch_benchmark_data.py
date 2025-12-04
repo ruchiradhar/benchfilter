@@ -1,0 +1,85 @@
+import torch
+import datasets
+from datasets import load_dataset, get_dataset_config_names
+import pdb
+import json
+import re 
+
+def unpack_result(model_result, benchmark_name):
+    results = {}
+    if "__" in benchmark_name:
+        benchmark_name = benchmark_name.split("__")[-1]
+    latest_result = model_result["latest"]
+    for lr in latest_result:
+        if "acc_norm" in lr:
+            result_str = "acc_norm"
+        elif "acc" in lr:
+            result_str = "acc"
+        elif "exact_match" in lr:
+            result_str = "exact_match"
+        elif "prompt_level_strict_acc" in lr:
+            result_str = "prompt_level_strict_acc"
+        else:
+            print (lr)
+            raise ValueError("No known result string found in lr")
+
+        # results.update({benchmark_name+"_"+str(lr["doc_id"]): lr[result_str]})
+        results[benchmark_name+"_"+str(lr["doc_id"])] = lr[result_str]
+
+    return results
+
+def contains_size_greater_than(text, threshold=30):
+    """
+    Check if a string contains a model size (e.g., '14B', '72B') greater than threshold.
+    
+    Args:
+        text: The string to search
+        threshold: The size threshold to compare against (default: 30)
+    
+    Returns:
+        bool: True if any size greater than threshold is found, False otherwise
+    """
+    # Pattern matches number followed by 'B' or 'b' (case-insensitive)
+    pattern = r'(\d+(?:\.\d+)?)[Bb]'
+    
+    matches = re.findall(pattern, text)
+
+    if len(matches) == 0:
+        return True
+    
+    for match in matches:
+        size = float(match)
+        if size > threshold:
+            return True
+    
+    return False
+
+dataset = load_dataset("open-llm-leaderboard/contents", split="train")
+
+dataset_df = dataset.to_pandas()
+ranked_df = dataset_df.sort_values(by='Average ⬆️', ascending=False, ignore_index=True)
+ranked_df_full_name = ranked_df["fullname"].tolist()
+top200_ranked_df_full_names = ranked_df_full_name[:300] 
+
+pattern = r'(\d+(?:\.\d+)?)[Bb]'
+filtered_model_names = []
+
+for model_name in top200_ranked_df_full_names:
+    if contains_size_greater_than(model_name, threshold=20):
+        continue
+    filtered_model_names.append(model_name)
+
+print (filtered_model_names) 
+print ("there are ", len(filtered_model_names), "models under 20B in the top 200")
+
+"""
+lm_eval --model vllm \
+    --model_args pretrained=EleutherAI/gpt-j-6B \
+    --tasks mgsm_direct \
+    --device cuda:0 \
+    --batch_size 8 \
+    --log_samples \
+    --output_path ./results/
+
+lm_eval --model vllm --model_args pretrained=EleutherAI/gpt-j-6B --tasks mgsm_direct --device cuda:0 --batch_size 8 --log_samples --output_path ./results/
+"""
