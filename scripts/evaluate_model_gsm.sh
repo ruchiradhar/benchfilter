@@ -29,17 +29,23 @@
 module load anaconda3/5.3.1
 module load cuda/11.8  
 eval "$(conda shell.bash hook)"
-conda activate reasoning-consistency
+conda activate benchfilterenv
 
 export VLLM_WORKER_MULTIPROC_METHOD=spawn    
  
 #your script, in this case: write the hostname and the ids of the chosen gpus and the status of the GPU.  
 hostname  
 
+# Specify the task name  
+task_name=mgsm_direct 
+
+# Specify model names
 declare -a model_names=("braindao/Qwen2.5-14B-Instruct" "YOYO-AI/Qwen2.5-14B-YOYO-V4-p2" "sometimesanotion/LamarckInfusion-14B-v2-lo" "sometimesanotion/LamarckInfusion-14B-v3" "notbdq/Qwen2.5-14B-Instruct-1M-GRPO-Reasoning" "Qwen/Qwen2.5-14B-Instruct-1M" "Lunzima/NQLSG-Qwen2.5-14B-MegaFusion-v8.8" "Quazim0t0/MFGRIMM-14B" "sometimesanotion/Qwenvergence-14B-v11" "sometimesanotion/LamarckInfusion-14B-v2-hi" "YOYO-AI/Qwen2.5-14B-it-restore" "sometimesanotion/Qwenvergence-14B-v10" "CombinHorizon/huihui-ai-abliteratedV2-Qwen2.5-14B-Inst-BaseMerge-TIES" "RDson/WomboCombo-R1-Coder-14B-Preview" "Quazim0t0/MFDOOM-14B" "jpacifico/Chocolatine-2-14B-Instruct-v2.0b3" "Quazim0t0/Nova-14b-sce" "Quazim0t0/Geedorah-14B" "v000000/Qwen2.5-14B-Gutenberg-Instruct-Slerpeno" "Quazim0t0/Alice-14B" "Quazim0t0/NovaScotia-14b-stock" "Quazim0t0/Rosemary-14b" "Quazim0t0/ODB-14b-sce" "jpacifico/Chocolatine-2-14B-Instruct-v2.0.3" "nbeerbower/Qwen2.5-Gutenberg-Doppel-14B" "Qwen/Qwen2.5-14B-Instruct" "Quazim0t0/Ponder-14B-linear" "jpacifico/Chocolatine-2-14B-Instruct-v2.0b2" "Lunzima/NQLSG-Qwen2.5-14B-MegaFusion-v3" "sometimesanotion/Qwen2.5-14B-Vimarckoso-v3-model_stock" "Quazim0t0/caramel-14B" "Quazim0t0/Wendy-14B" "sometimesanotion/Qwenvergence-14B-v12-Prose-DS" "Quazim0t0/time-14b-stock" "sometimesanotion/Lamarck-14B-v0.6" "sometimesanotion/ChocoTrio-14B-v1" "Quazim0t0/1up-14b" "tensopolis/qwen2.5-14b-tensopolis-v1" "sometimesanotion/Lamarck-14B-v0.7-rc1" "v000000/Qwen2.5-Lumen-14B" "prithivMLmods/Sombrero-Opus-14B-Sm5" "sthenno-com/miscii-14b-0130" "sometimesanotion/Qwenvergence-14B-v13-Prose-DS" "Quazim0t0/Vine-14b-sce" "sometimesanotion/Qwen2.5-14B-Vimarckoso-v3" "Quazim0t0/Casa-14b-sce" "Quazim0t0/Mithril-14B-sce" "Lunzima/NQLSG-Qwen2.5-14B-MegaFusion-v5" "Sakalti/ultiima-14B-v0.2" "prithivMLmods/Primal-Opus-14B-Optimus-v2")
 
-# global_mmlu_{lang}: ar, bn, cy, de, en, es, fr, hi, id, it, ja, ko, my, pt, sq, sw, yo, zh   
-task_name=mgsm_direct        
+
+# Specify languages required
+# required languages: English, Spanish, French, German, Swahili, Bengali, Chinese, Japanese.
+# required language codes: en, es, fr, de, sw, bn, zh, ja
 
 for model_name in "${model_names[@]}"
 do
