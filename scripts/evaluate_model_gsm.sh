@@ -55,6 +55,6 @@ do
         --device cuda:0 \
         --batch_size 8 \
         --log_samples \
-        --output_path ./results/
+        --output_path ./results/gsm/
 done 
 
