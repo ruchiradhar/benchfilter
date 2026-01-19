@@ -59,18 +59,18 @@ dataset = load_dataset("open-llm-leaderboard/contents", split="train")
 dataset_df = dataset.to_pandas()
 ranked_df = dataset_df.sort_values(by='Average ⬆️', ascending=False, ignore_index=True)
 ranked_df_full_name = ranked_df["fullname"].tolist()
-top200_ranked_df_full_names = ranked_df_full_name[:300]   
+top100_ranked_df_full_names = ranked_df_full_name[:101]   # we get 22 models over 20B in the top 100
 
 pattern = r'(\d+(?:\.\d+)?)[Bb]'
 filtered_model_names = []
 
-for model_name in top200_ranked_df_full_names:
+for model_name in top100_ranked_df_full_names:
     if contains_size_greater_than(model_name, threshold=20):
         continue
     filtered_model_names.append(model_name)
 
 print (filtered_model_names) 
-print ("there are ", len(filtered_model_names), "models under 20B in the top 200")
+print ("there are ", len(filtered_model_names), "models under 20B in the top 100")
 print ('" "'.join(filtered_model_names))
 print ("~~~~~~~~~~~~~~~~~~~~")
 print ('" "'.join(filtered_model_names[50:100]))       
