@@ -7,7 +7,7 @@
 
 #SBATCH --mem=120G    
 
-#SBATCH --job-name=evaluate_models_on_mgsm_direct_50_100_models                                                                                                                             
+#SBATCH --job-name=evaluate_models_on_mmlu_top20                                                                                                                             
 
 #SBATCH -o logs/log-%j.%x.out                       
 
