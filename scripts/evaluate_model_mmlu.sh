@@ -9,7 +9,7 @@
 
 #SBATCH --job-name=evaluate_models_on_mmlu_top20                                                                                                                             
 
-#SBATCH -o logs/log-%j.%x.out                       
+#SBATCH -o /home/nwq388/projects/benchfilter/logs/log-%j.%x.out                       
 
 #SBATCH --ntasks=1
 
@@ -24,6 +24,9 @@
 
 #Skipping many options! see man sbatch 
 # From here on, we can start our program
+
+# setting HF token
+export HF_TOKEN=***REMOVED-HF-TOKEN***
 
 . /etc/profile.d/modules.sh
 module load anaconda3/5.3.1
