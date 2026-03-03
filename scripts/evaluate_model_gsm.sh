@@ -13,9 +13,9 @@
 
 #SBATCH --ntasks=1
 
-#We expect that our program should not run longer than 3 days 
+#We expect that our program should not run longer than 2 days 
 #Note that a program will be killed once it exceeds this time!
-#SBATCH --time=3-00:00:00
+#SBATCH --time=2-00:00:00
 
 # mail alert at start, end and abortion of execution   
 ##SBATCH --mail-type=ALL
