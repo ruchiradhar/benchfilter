@@ -76,7 +76,7 @@ task_name=mgsm_direct
 for model_name in "${model_names[@]}"
 do
     lm_eval --model vllm \
-    --model_args pretrained=$model_name,max_model_len=auto \
+    --model_args pretrained=$model_name \
         --tasks $task_name \
         --device cuda:0 \
         --batch_size 8 \
