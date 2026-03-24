@@ -74,7 +74,7 @@ print (filtered_model_names)
 print ("there are ", len(filtered_model_names), "models under 20B in the top 301-401")
 print ('" "'.join(filtered_model_names))
 print ("~~~~~~~~~~~~~~~~~~~~")
-print ('" "'.join(filtered_model_names[:20]))       
+print ('" "'.join(filtered_model_names[20:41]))       
 
 
 
