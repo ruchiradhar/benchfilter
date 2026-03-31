@@ -70,11 +70,9 @@ for model_name in top100_ranked_df_full_names:
         continue
     filtered_model_names.append(model_name)
 
-print (filtered_model_names) 
 print ("there are ", len(filtered_model_names), "models under 20B in the top 100")
 print ('" "'.join(filtered_model_names))
-print ("~~~~~~~~~~~~~~~~~~~~")
-print ('" "'.join(filtered_model_names))       
+print ("~~~~~~~~~~~~~~~~~~~~")   
 
 
 
