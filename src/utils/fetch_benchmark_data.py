@@ -73,7 +73,7 @@ for model_name in top100_ranked_df_full_names:
 print ("there are ", len(filtered_model_names), "models under 20B in the top 100")
 print ('" "'.join(filtered_model_names))
 print ("~~~~~~~~~~~~~~~~~~~~")
-print("25 from list: ", filtered_model_names[:25])   
+print("25 from list: ", filtered_model_names[25:50])   
 
 
 
