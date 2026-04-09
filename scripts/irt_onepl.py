@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+"""Train a 1PL IRT model from files in data/irt and save results.
+
+Examples:
+    python scripts/irt_onepl.py --dataset mgsm --language en
+    python scripts/irt_onepl.py --dataset mmlu --language en
+    python scripts/irt_onepl.py --dataset mmlu --language en --category humanities
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import List
+
+import pyro
+import torch
+from py_irt.config import IrtConfig
+from py_irt.dataset import Dataset
+from py_irt.training import IrtModelTrainer
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def resolve_repo_path(path_value: Path) -> Path:
+    if path_value.is_absolute():
+        return path_value
+    return (PROJECT_ROOT / path_value).resolve()
+
+
+class StreamToLogger:
+    """Redirect writes from stdout/stderr to a logger."""
+
+    def __init__(self, logger: logging.Logger, level: int) -> None:
+        self.logger = logger
+        self.level = level
+        self._buffer = ""
+
+    def write(self, message: str) -> int:
+        self._buffer += message
+        while "\n" in self._buffer:
+            line, self._buffer = self._buffer.split("\n", 1)
+            line = line.strip()
+            if line:
+                self.logger.log(self.level, line)
+        return len(message)
+
+    def flush(self) -> None:
+        remaining = self._buffer.strip()
+        if remaining:
+            self.logger.log(self.level, remaining)
+        self._buffer = ""
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Train a 1PL IRT model for dataset/language data in data/irt."
+    )
+    parser.add_argument(
+        "--dataset",
+        required=True,
+        choices=["mmlu", "mgsm"],
+        help="Dataset name.",
+    )
+    parser.add_argument(
+        "--language",
+        required=True,
+        help="Language code to train for, e.g. en, de, es, zh.",
+    )
+    parser.add_argument(
+        "--category",
+        default=None,
+        help=(
+            "MMLU category filter (e.g. business, humanities, medical, "
+            "other, social_sciences, stem). Ignored for MGSM."
+        ),
+    )
+    parser.add_argument(
+        "--data_dir",
+        type=Path,
+        default=Path("data/irt"),
+        help="Directory containing converted IRT jsonlines files.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default=Path("results_irt/one_pl"),
+        help="Directory to write trained parameter files.",
+    )
+    parser.add_argument("--epochs", type=int, default=2000, help="Training epochs.")
+    parser.add_argument(
+        "--log_every",
+        type=int,
+        default=500,
+        help="Log interval in training epochs.",
+    )
+    parser.add_argument("--dropout", type=float, default=0.2, help="Dropout value.")
+    parser.add_argument("--lr", type=float, default=0.1, help="Learning rate.")
+    parser.add_argument(
+        "--lr_decay", type=float, default=0.9999, help="Learning rate decay."
+    )
+    parser.add_argument(
+        "--device", default="cpu", help="Torch device for training, e.g. cpu, cuda."
+    )
+    parser.add_argument(
+        "--seed", type=int, default=None, help="Optional random seed for reproducibility."
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable py-irt console progress output (default is quiet mode).",
+    )
+    parser.add_argument(
+        "--log_dir",
+        type=Path,
+        default=Path("logs/irt"),
+        help="Directory for run logs.",
+    )
+    args = parser.parse_args()
+    args.data_dir = resolve_repo_path(args.data_dir)
+    args.output_dir = resolve_repo_path(args.output_dir)
+    args.log_dir = resolve_repo_path(args.log_dir)
+    return args
+
+
+def setup_logger(log_dir: Path, dataset: str, language: str) -> tuple[logging.Logger, Path]:
+    log_dir.mkdir(parents=True, exist_ok=True)
+    run_date = datetime.now(timezone.utc).strftime("%Y%m%d")
+    log_path = log_dir / f"irt_onepl_{dataset}_{language}_{run_date}.log"
+
+    logger = logging.getLogger("irt_onepl")
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+    logger.propagate = False
+
+    handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    return logger, log_path
+
+
+def normalize_category(category: str) -> str:
+    return category.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def resolve_input_files(
+    dataset: str, language: str, data_dir: Path, category: str | None = None
+) -> List[Path]:
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Data directory does not exist: {data_dir}")
+
+    if dataset == "mgsm":
+        if category is not None:
+            raise ValueError("--category is only supported with --dataset mmlu")
+        exact = data_dir / f"mgsm_{language}.jsonlines"
+        if exact.exists():
+            return [exact]
+        candidates = sorted(data_dir.glob(f"mgsm_{language}*.jsonlines"))
+        if not candidates:
+            raise FileNotFoundError(
+                f"No MGSM files found for language '{language}' in {data_dir}"
+            )
+        return candidates
+
+    if category is not None:
+        category_name = normalize_category(category)
+        target = data_dir / f"mmlu_{language}_{category_name}.jsonlines"
+        if not target.exists():
+            available = sorted(
+                p.stem.replace(f"mmlu_{language}_", "")
+                for p in data_dir.glob(f"mmlu_{language}_*.jsonlines")
+            )
+            raise FileNotFoundError(
+                f"No MMLU file for language '{language}' and category '{category_name}' in {data_dir}. "
+                f"Available categories: {available}"
+            )
+        return [target]
+
+    candidates = sorted(data_dir.glob(f"mmlu_{language}_*.jsonlines"))
+    if not candidates:
+        raise FileNotFoundError(
+            f"No MMLU files found for language '{language}' in {data_dir}"
+        )
+    return candidates
+
+
+def build_output_path(input_file: Path, output_dir: Path) -> Path:
+    return output_dir / f"{input_file.stem}_1pl.json"
+
+
+def train_one_file(input_path: Path, output_path: Path, args: argparse.Namespace) -> None:
+    dataset = Dataset.from_jsonlines(input_path)
+    config = IrtConfig(
+        model_type="1pl",
+        epochs=args.epochs,
+        log_every=args.log_every,
+        dropout=args.dropout,
+        lr=args.lr,
+        lr_decay=args.lr_decay,
+        seed=args.seed,
+    )
+    trainer = IrtModelTrainer(
+        config=config,
+        data_path=input_path,
+        dataset=dataset,
+        verbose=args.verbose,
+    )
+    trainer.train(epochs=args.epochs, device=args.device)
+    output_path.write_text(json.dumps(trainer.last_params, indent=2), encoding="utf-8")
+
+    return None
+
+
+def main() -> None:
+    args = parse_args()
+    logger, _ = setup_logger(args.log_dir, args.dataset, args.language)
+
+    stdout_logger = StreamToLogger(logger, logging.INFO)
+    stderr_logger = StreamToLogger(logger, logging.ERROR)
+
+    with redirect_stdout(stdout_logger), redirect_stderr(stderr_logger):
+        logger.info("Starting run")
+        logger.info(
+            "Arguments: dataset=%s language=%s category=%s data_dir=%s output_dir=%s epochs=%d device=%s",
+            args.dataset,
+            args.language,
+            args.category,
+            args.data_dir,
+            args.output_dir,
+            args.epochs,
+            args.device,
+        )
+
+        if args.seed is not None:
+            pyro.set_rng_seed(args.seed)
+            torch.manual_seed(args.seed)
+            logger.info("Set random seed to %d", args.seed)
+
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        input_files = resolve_input_files(
+            args.dataset, args.language, args.data_dir, args.category
+        )
+        logger.info("Resolved %d input file(s)", len(input_files))
+
+        for input_file in input_files:
+            output_file = build_output_path(input_file=input_file, output_dir=args.output_dir)
+            logger.info("Training 1PL on %s", input_file)
+            train_one_file(input_file, output_file, args)
+            logger.info("Saved model params to %s", output_file)
+        logger.info("Run completed successfully")
+
+if __name__ == "__main__":
+    main()
