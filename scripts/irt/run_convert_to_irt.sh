@@ -2,14 +2,14 @@
 # Run IRT format conversion for all datasets.
 #
 # Usage:
-#   bash scripts/run_convert_to_irt.sh
+#   bash scripts/irt/run_convert_to_irt.sh
 #
 # Output goes to data/irt/
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CONVERT_SCRIPT="$SCRIPT_DIR/convert_to_irt.py"
 OUTPUT_DIR="$PROJECT_DIR/data/irt"
 
