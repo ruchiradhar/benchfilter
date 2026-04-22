@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Train a 1PL IRT model from files in data/irt and save results.
+"""Train a 4PL IRT model from files in data/irt and save results.
 
 Examples:
-    python scripts/irt/irt_onepl.py --dataset mgsm --language en
-    python scripts/irt/irt_onepl.py --dataset mmlu --language en
-    python scripts/irt/irt_onepl.py --dataset mmlu --language en --category humanities
+    python scripts/irt/irt_fourpl.py --dataset mgsm --language en
+    python scripts/irt/irt_fourpl.py --dataset mmlu --language en
+    python scripts/irt/irt_fourpl.py --dataset mmlu --language en --category humanities
 """
 
 from __future__ import annotations
@@ -152,7 +152,7 @@ def save_loss_plot(losses: list[float], plot_path: Path, title: str) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train a 1PL IRT model for dataset/language data in data/irt."
+        description="Train a 4PL IRT model for dataset/language data in data/irt."
     )
     parser.add_argument(
         "--dataset",
@@ -182,18 +182,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output_dir",
         type=Path,
-        default=Path("results/1PL"),
+        default=Path("results/4PL"),
         help="Directory to write trained parameter files.",
     )
-    parser.add_argument("--epochs", type=int, default=2000, help="Training epochs.")
+    parser.add_argument("--epochs", type=int, default=5000, help="Training epochs.")
     parser.add_argument(
         "--log_every",
         type=int,
-        default=500,
+        default=1000,
         help="Log interval in training epochs.",
     )
     parser.add_argument("--dropout", type=float, default=0.5, help="Dropout value.")
-    parser.add_argument("--lr", type=float, default=0.1, help="Learning rate.")
+    parser.add_argument("--lr", type=float, default=0.05, help="Learning rate.")
     parser.add_argument(
         "--lr_decay", type=float, default=0.9999, help="Learning rate decay."
     )
@@ -224,9 +224,9 @@ def parse_args() -> argparse.Namespace:
 def setup_logger(log_dir: Path, dataset: str, language: str) -> tuple[logging.Logger, Path]:
     log_dir.mkdir(parents=True, exist_ok=True)
     run_date = datetime.now(timezone.utc).strftime("%Y%m%d")
-    log_path = log_dir / f"irt_onepl_{dataset}_{language}_{run_date}.log"
+    log_path = log_dir / f"irt_fourpl_{dataset}_{language}_{run_date}.log"
 
-    logger = logging.getLogger("irt_onepl")
+    logger = logging.getLogger("irt_fourpl")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
     logger.propagate = False
@@ -285,13 +285,13 @@ def resolve_input_files(
 
 
 def build_output_path(input_file: Path, output_dir: Path) -> Path:
-    return output_dir / f"{input_file.stem}_1pl.json"
+    return output_dir / f"{input_file.stem}_4pl.json"
 
 
 def train_one_file(input_path: Path, output_path: Path, args: argparse.Namespace) -> None:
     dataset = Dataset.from_jsonlines(input_path)
     config = IrtConfig(
-        model_type="1pl",
+        model_type="4pl",
         epochs=args.epochs,
         log_every=args.log_every,
         dropout=args.dropout,
@@ -307,7 +307,7 @@ def train_one_file(input_path: Path, output_path: Path, args: argparse.Namespace
     )
     trainer.train(epochs=args.epochs, device=args.device)
     output_path.write_text(json.dumps(trainer.last_params, indent=2), encoding="utf-8")
-    save_loss_plot(trainer.losses, output_path.with_suffix(".png"), f"1PL Training Loss — {input_path.stem}")
+    save_loss_plot(trainer.losses, output_path.with_suffix(".png"), f"4PL Training Loss — {input_path.stem}")
 
 
 def main() -> None:
@@ -343,7 +343,7 @@ def main() -> None:
 
         for input_file in input_files:
             output_file = build_output_path(input_file=input_file, output_dir=args.output_dir)
-            logger.info("Training 1PL on %s", input_file)
+            logger.info("Training 4PL on %s", input_file)
             train_one_file(input_file, output_file, args)
             logger.info("Saved model params to %s", output_file)
         logger.info("Run completed successfully")
