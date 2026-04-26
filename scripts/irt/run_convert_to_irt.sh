@@ -12,7 +12,7 @@ set -euo pipefail
 #PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="${PROJECT_DIR:-$(git -C "${SLURM_SUBMIT_DIR:-$PWD}" rev-parse --show-toplevel 2>/dev/null || { cd "$SCRIPT_DIR/../.." && pwd; })}"
-CONVERT_SCRIPT="$SCRIPT_DIR/convert_to_irt.py"
+CONVERT_SCRIPT="$PROJECT_DIR/scripts/irt/convert_to_irt.py"
 OUTPUT_DIR="$PROJECT_DIR/data/irt"
 
 echo "========================================"
