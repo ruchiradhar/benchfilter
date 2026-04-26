@@ -79,6 +79,6 @@ do
             --device cuda:0 \
             --batch_size 8 \
             --log_samples \
-            --output_path ../results/mmlu/
+            --output_path ../../results/mmlu/
     done
 done
