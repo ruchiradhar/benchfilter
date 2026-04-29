@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Train a 4PL IRT model from files in data/irt and save results.
+"""Train 4PL IRT models from all files in data/irt and save results.
 
 Examples:
-    python scripts/irt/irt_fourpl.py --dataset mgsm --language en
-    python scripts/irt/irt_fourpl.py --dataset mmlu --language en
-    python scripts/irt/irt_fourpl.py --dataset mmlu --language en --category humanities
+    python scripts/irt/irt_fourpl.py
+    python scripts/irt/irt_fourpl.py --data_dir data/irt --output_dir results/4PL
 """
 
 from __future__ import annotations
@@ -12,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import traceback
 from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 from pathlib import Path
@@ -152,26 +152,7 @@ def save_loss_plot(losses: list[float], plot_path: Path, title: str) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train a 4PL IRT model for dataset/language data in data/irt."
-    )
-    parser.add_argument(
-        "--dataset",
-        required=True,
-        choices=["mmlu", "mgsm"],
-        help="Dataset name.",
-    )
-    parser.add_argument(
-        "--language",
-        required=True,
-        help="Language code to train for, e.g. en, de, es, zh.",
-    )
-    parser.add_argument(
-        "--category",
-        default=None,
-        help=(
-            "MMLU category filter (e.g. business, humanities, medical, "
-            "other, social_sciences, stem). Ignored for MGSM."
-        ),
+        description="Train a 4PL IRT model for every jsonlines file in data/irt."
     )
     parser.add_argument(
         "--data_dir",
@@ -221,10 +202,10 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def setup_logger(log_dir: Path, dataset: str, language: str) -> tuple[logging.Logger, Path]:
+def setup_logger(log_dir: Path) -> tuple[logging.Logger, Path]:
     log_dir.mkdir(parents=True, exist_ok=True)
     run_date = datetime.now(timezone.utc).strftime("%Y%m%d")
-    log_path = log_dir / f"irt_fourpl_{dataset}_{language}_{run_date}.log"
+    log_path = log_dir / f"irt_fourpl_{run_date}.log"
 
     logger = logging.getLogger("irt_fourpl")
     logger.setLevel(logging.INFO)
@@ -239,48 +220,13 @@ def setup_logger(log_dir: Path, dataset: str, language: str) -> tuple[logging.Lo
     return logger, log_path
 
 
-def normalize_category(category: str) -> str:
-    return category.strip().lower().replace("-", "_").replace(" ", "_")
-
-
-def resolve_input_files(
-    dataset: str, language: str, data_dir: Path, category: str | None = None
-) -> list[Path]:
+def resolve_input_files(data_dir: Path) -> list[Path]:
     if not data_dir.exists():
         raise FileNotFoundError(f"Data directory does not exist: {data_dir}")
 
-    if dataset == "mgsm":
-        if category is not None:
-            raise ValueError("--category is only supported with --dataset mmlu")
-        exact = data_dir / f"mgsm_{language}.jsonlines"
-        if exact.exists():
-            return [exact]
-        candidates = sorted(data_dir.glob(f"mgsm_{language}*.jsonlines"))
-        if not candidates:
-            raise FileNotFoundError(
-                f"No MGSM files found for language '{language}' in {data_dir}"
-            )
-        return candidates
-
-    if category is not None:
-        category_name = normalize_category(category)
-        target = data_dir / f"mmlu_{language}_{category_name}.jsonlines"
-        if not target.exists():
-            available = sorted(
-                p.stem.replace(f"mmlu_{language}_", "")
-                for p in data_dir.glob(f"mmlu_{language}_*.jsonlines")
-            )
-            raise FileNotFoundError(
-                f"No MMLU file for language '{language}' and category '{category_name}' in {data_dir}. "
-                f"Available categories: {available}"
-            )
-        return [target]
-
-    candidates = sorted(data_dir.glob(f"mmlu_{language}_*.jsonlines"))
+    candidates = sorted(path for path in data_dir.rglob("*.jsonlines") if path.is_file())
     if not candidates:
-        raise FileNotFoundError(
-            f"No MMLU files found for language '{language}' in {data_dir}"
-        )
+        raise FileNotFoundError(f"No jsonlines files found in {data_dir}")
     return candidates
 
 
@@ -312,7 +258,7 @@ def train_one_file(input_path: Path, output_path: Path, args: argparse.Namespace
 
 def main() -> None:
     args = parse_args()
-    logger, _ = setup_logger(args.log_dir, args.dataset, args.language)
+    logger, _ = setup_logger(args.log_dir)
 
     stdout_logger = StreamToLogger(logger, logging.INFO)
     stderr_logger = StreamToLogger(logger, logging.ERROR)
@@ -320,10 +266,7 @@ def main() -> None:
     with redirect_stdout(stdout_logger), redirect_stderr(stderr_logger):
         logger.info("Starting run")
         logger.info(
-            "Arguments: dataset=%s language=%s category=%s data_dir=%s output_dir=%s epochs=%d device=%s",
-            args.dataset,
-            args.language,
-            args.category,
+            "Arguments: data_dir=%s output_dir=%s epochs=%d device=%s",
             args.data_dir,
             args.output_dir,
             args.epochs,
@@ -336,16 +279,23 @@ def main() -> None:
             logger.info("Set random seed to %d", args.seed)
 
         args.output_dir.mkdir(parents=True, exist_ok=True)
-        input_files = resolve_input_files(
-            args.dataset, args.language, args.data_dir, args.category
-        )
+        input_files = resolve_input_files(args.data_dir)
         logger.info("Resolved %d input file(s)", len(input_files))
 
+        failures = 0
         for input_file in input_files:
             output_file = build_output_path(input_file=input_file, output_dir=args.output_dir)
             logger.info("Training 4PL on %s", input_file)
-            train_one_file(input_file, output_file, args)
+            try:
+                train_one_file(input_file, output_file, args)
+            except Exception:
+                failures += 1
+                logger.error("Failed 4PL run for %s", input_file)
+                logger.error("%s", traceback.format_exc())
+                continue
             logger.info("Saved model params to %s", output_file)
+        if failures:
+            logger.warning("Completed with %d failure(s)", failures)
         logger.info("Run completed successfully")
 
 if __name__ == "__main__":
