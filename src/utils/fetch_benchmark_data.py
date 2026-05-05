@@ -59,7 +59,7 @@ dataset = load_dataset("open-llm-leaderboard/contents", split="train")
 dataset_df = dataset.to_pandas()
 ranked_df = dataset_df.sort_values(by='Average ⬆️', ascending=False, ignore_index=True)
 ranked_df_full_name = ranked_df["fullname"].tolist()
-top100_ranked_df_full_names = ranked_df_full_name[301:401]
+top100_ranked_df_full_names = ranked_df_full_name[401:451]
 
 
 pattern = r'(\d+(?:\.\d+)?)[Bb]'
@@ -70,40 +70,9 @@ for model_name in top100_ranked_df_full_names:
         continue
     filtered_model_names.append(model_name)
 
-print ("there are ", len(filtered_model_names), "models under 20B in the top 100")
+print ("there are ", len(filtered_model_names), "models under 20B in the top 401-451")
 print ('" "'.join(filtered_model_names))
 print ("~~~~~~~~~~~~~~~~~~~~")
-print("25 from list: ", filtered_model_names[:26])   
+print("25 from list: ", filtered_model_names[:25])   
 
 
-
-# all_model_results = []
-# idx = 0 
-# for model_name in top200_ranked_df_full_names:
-#     model_name = model_name.replace("/", "__")+"-details"
-#     if model_name == "JungZoona__T3Q-Qwen2.5-14B-Instruct-1M-e3-details":
-#         continue
-#     repo_id = f"open-llm-leaderboard/{model_name}"
-#     model_config_names = get_dataset_config_names(repo_id)
-#     results_across_benchmarks = {}
-#     for model_config_name in model_config_names:
-#         try:
-#             model_result = load_dataset(repo_id, model_config_name)
-#         except:
-#             print(f"Skipping {model_name} {model_config_name} due to load error")
-#             continue
-#         unpack_model_result = unpack_result(model_result, model_config_name)
-#         results_across_benchmarks.update(unpack_model_result)
-
-#     all_model_results.append({"subject_id": model_name, "responses": results_across_benchmarks}) 
-
-#     if idx%10 == 0:
-#         print(f"Processed {idx} models")
-
-#     idx += 1
-
-
-# with open('/home/tfv783/benchfilter/data/raw/open_llm_benchmark_top200_results.jsonl', 'w', encoding='utf-8') as f:
-#     for entry in all_model_results:
-#         json_line = json.dumps(entry)
-#         f.write(json_line + '\n')
