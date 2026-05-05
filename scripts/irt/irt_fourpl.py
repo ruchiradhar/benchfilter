@@ -168,6 +168,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=5000, help="Training epochs.")
     parser.add_argument(
+        "--skip_existing",
+        action="store_true",
+        help="Skip training if the output file already exists.",
+    )
+    parser.add_argument(
         "--log_every",
         type=int,
         default=1000,
@@ -285,6 +290,9 @@ def main() -> None:
         failures = 0
         for input_file in input_files:
             output_file = build_output_path(input_file=input_file, output_dir=args.output_dir)
+            if args.skip_existing and output_file.exists():
+                logger.info("Skipping %s (output already exists)", input_file)
+                continue
             logger.info("Training 4PL on %s", input_file)
             try:
                 train_one_file(input_file, output_file, args)
