@@ -9,7 +9,7 @@
 
 #SBATCH --job-name=evaluate_models_gsm_150-200                                                                                                                            
 
-#SBATCH -o /home/nwq388/projects/benchfilter/benchmarks/logs/log-%j.%x.out                  
+#SBATCH -o /home/nwq388/projects/benchfilter/logs/benchmarks/log-%j.%x.out                  
 
 #SBATCH --ntasks=1
 
