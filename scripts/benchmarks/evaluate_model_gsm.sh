@@ -34,6 +34,7 @@ module load cuda/11.8
 eval "$(conda shell.bash hook)"
 conda activate benchfilterenv
 
+export MKL_THREADING_LAYER=GNU
 export VLLM_WORKER_MULTIPROC_METHOD=spawn    
  
 #your script, in this case: write the hostname and the ids of the chosen gpus and the status of the GPU.  
