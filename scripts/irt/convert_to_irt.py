@@ -73,15 +73,21 @@ def read_samples(filepath: str, acc_key: str) -> dict:
 
 def convert_mmlu(results_dir: str, output_dir: str):
     """Convert MMLU results to IRT format.
-    
+
     Produces one file per (lang, domain): mmlu_{lang}_{domain}.jsonlines
+    Languages with uneven model coverage (e.g. 'bn') are skipped so that
+    every output file has the same subject pool.
     """
+    SKIP_LANGS = {"bn"}
+
     results_path = Path(results_dir)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # Collect: { (lang, domain): [ (model_name, {doc_id: score}) ] }
-    collection = defaultdict(list)
+    # Collect: { (lang, domain): { model_name: {doc_id: score} } }
+    # Dict per (lang, domain) so later-sorted timestamp files overwrite earlier
+    # ones for the same model, preventing duplicate subjects.
+    collection: dict = defaultdict(dict)
 
     model_dirs = sorted([d for d in results_path.iterdir() if d.is_dir()])
     for model_dir in model_dirs:
@@ -93,15 +99,16 @@ def convert_mmlu(results_dir: str, output_dir: str):
             if parsed is None:
                 continue
             lang, domain = parsed
+            if lang in SKIP_LANGS:
+                continue
             responses = read_samples(str(f), acc_key="acc")
-            collection[(lang, domain)].append((model_name, responses))
+            collection[(lang, domain)][model_name] = responses
 
     # Write IRT files
     for (lang, domain), model_responses in sorted(collection.items()):
         out_file = output_path / f"mmlu_{lang}_{domain}.jsonlines"
         with open(out_file, "w", encoding="utf-8") as fout:
-            for model_name, responses in model_responses:
-                # Sort items by doc_id numerically
+            for model_name, responses in sorted(model_responses.items()):
                 sorted_items = sorted(responses.items(), key=lambda x: x[0])
                 irt_responses = {f"item_{did}": score for did, score in sorted_items}
                 record = {
@@ -109,21 +116,28 @@ def convert_mmlu(results_dir: str, output_dir: str):
                     "responses": irt_responses,
                 }
                 fout.write(json.dumps(record, ensure_ascii=False) + "\n")
+        first_responses = next(iter(model_responses.values())) if model_responses else {}
         print(f"  Written: {out_file}  ({len(model_responses)} models, "
-              f"{len(model_responses[0][1]) if model_responses else 0} items)")
+              f"{len(first_responses)} items)")
 
 
 def convert_mgsm(results_dir: str, output_dir: str):
     """Convert MGSM results to IRT format.
-    
+
     Produces one file per lang: mgsm_{lang}.jsonlines
+    The 'es_spanish_bench' variant is excluded; only standard MGSM languages
+    are retained so all output files share the same subject pool.
     """
+    SKIP_LANGS = {"es_spanish_bench"}
+
     results_path = Path(results_dir)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # Collect: { lang_key: [ (model_name, {doc_id: score}) ] }
-    collection = defaultdict(list)
+    # Collect: { lang_key: { model_name: {doc_id: score} } }
+    # Dict per lang_key so later-sorted timestamp files overwrite earlier ones
+    # for the same model, preventing duplicate subjects.
+    collection: dict = defaultdict(dict)
 
     model_dirs = sorted([d for d in results_path.iterdir() if d.is_dir()])
     for model_dir in model_dirs:
@@ -134,14 +148,16 @@ def convert_mgsm(results_dir: str, output_dir: str):
             lang_key = parse_mgsm_filename(f.name)
             if lang_key is None:
                 continue
+            if lang_key in SKIP_LANGS:
+                continue
             responses = read_samples(str(f), acc_key="exact_match")
-            collection[lang_key].append((model_name, responses))
+            collection[lang_key][model_name] = responses
 
     # Write IRT files
     for lang_key, model_responses in sorted(collection.items()):
         out_file = output_path / f"mgsm_{lang_key}.jsonlines"
         with open(out_file, "w", encoding="utf-8") as fout:
-            for model_name, responses in model_responses:
+            for model_name, responses in sorted(model_responses.items()):
                 sorted_items = sorted(responses.items(), key=lambda x: x[0])
                 irt_responses = {f"item_{did}": score for did, score in sorted_items}
                 record = {
@@ -149,8 +165,9 @@ def convert_mgsm(results_dir: str, output_dir: str):
                     "responses": irt_responses,
                 }
                 fout.write(json.dumps(record, ensure_ascii=False) + "\n")
+        first_responses = next(iter(model_responses.values())) if model_responses else {}
         print(f"  Written: {out_file}  ({len(model_responses)} models, "
-              f"{len(model_responses[0][1]) if model_responses else 0} items)")
+              f"{len(first_responses)} items)")
 
 
 def main():

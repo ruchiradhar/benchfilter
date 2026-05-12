@@ -31,12 +31,12 @@ from scipy.stats import spearmanr
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-ALL_LANGUAGES = ["bn", "de", "en", "es", "es_spanish_bench", "fr", "ja", "ru", "sw", "te", "th", "zh"]
+ALL_LANGUAGES = ["bn", "de", "en", "es", "fr", "ja", "ru", "sw", "te", "th", "zh"]
 
 LANG_LABELS = {
     "bn": "Bengali", "de": "German", "en": "English", "es": "Spanish",
-    "es_spanish_bench": "Spanish (bench)", "fr": "French", "ja": "Japanese",
-    "ru": "Russian", "sw": "Swahili", "te": "Telugu", "th": "Thai", "zh": "Chinese",
+    "fr": "French", "ja": "Japanese", "ru": "Russian", "sw": "Swahili",
+    "te": "Telugu", "th": "Thai", "zh": "Chinese",
 }
 
 CMAP_RY = LinearSegmentedColormap.from_list(
@@ -185,22 +185,41 @@ def main() -> None:
     plt.close(fig2)
     print("Saved spearman_heatmap_disc.png")
 
-    # --- Figure 3: Item rank stability (diff top, disc bottom) ---
-    fig3, (ax3a, ax3b) = plt.subplots(2, 1, figsize=(10, 7))
-    fig3.suptitle("MGSM 2PL — Item rank stability across languages (lower = more consistent)", fontsize=11)
-    plot_item_stability(stab_diff, "difficulty", ax3a)
-    plot_item_stability(stab_disc, "discrimination", ax3b)
+    # --- Figure 3: Kendall's W bar chart ---
+    fig3, ax3 = plt.subplots(figsize=(6, 4))
+    param_labels = ["Difficulty", "Discrimination"]
+    w_values = [w_diff, w_disc]
+    bars = ax3.bar(param_labels, w_values, color="steelblue", edgecolor="white", width=0.4)
+    ax3.set_ylim(0, 1)
+    ax3.set_ylabel("Kendall's W")
+    ax3.set_title("MGSM 2PL — Cross-language item rank concordance (Kendall's W)")
+    ax3.axhline(0.7, color="orange", linestyle="--", linewidth=1, label="W = 0.7 (strong)")
+    ax3.axhline(0.5, color="red", linestyle="--", linewidth=1, label="W = 0.5 (moderate)")
+    for bar, val in zip(bars, w_values):
+        ax3.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
+                 f"{val:.3f}", ha="center", va="bottom", fontsize=10)
+    ax3.legend(fontsize=8)
     fig3.tight_layout()
-    fig3.savefig(args.output_dir / "item_rank_stability.png", dpi=150, bbox_inches="tight")
+    fig3.savefig(args.output_dir / "kendalls_w.png", dpi=150, bbox_inches="tight")
     plt.close(fig3)
+    print("Saved kendalls_w.png")
+
+    # --- Figure 4: Item rank stability (diff top, disc bottom) ---
+    fig4a, (ax4a, ax4b) = plt.subplots(2, 1, figsize=(10, 7))
+    fig4a.suptitle("MGSM 2PL — Item rank stability across languages (lower = more consistent)", fontsize=11)
+    plot_item_stability(stab_diff, "difficulty", ax4a)
+    plot_item_stability(stab_disc, "discrimination", ax4b)
+    fig4a.tight_layout()
+    fig4a.savefig(args.output_dir / "item_rank_stability.png", dpi=150, bbox_inches="tight")
+    plt.close(fig4a)
     print("Saved item_rank_stability.png")
 
-    # --- Figure 4: Language dendrogram ---
-    fig4, ax4 = plt.subplots(figsize=(10, 5))
-    plot_language_dendrogram(diff_df, disc_df, langs, ax4)
-    fig4.tight_layout()
-    fig4.savefig(args.output_dir / "language_dendrogram.png", dpi=150, bbox_inches="tight")
-    plt.close(fig4)
+    # --- Figure 5: Language dendrogram ---
+    fig5, ax5 = plt.subplots(figsize=(10, 5))
+    plot_language_dendrogram(diff_df, disc_df, langs, ax5)
+    fig5.tight_layout()
+    fig5.savefig(args.output_dir / "language_dendrogram.png", dpi=150, bbox_inches="tight")
+    plt.close(fig5)
     print("Saved language_dendrogram.png")
 
     # --- CSVs ---

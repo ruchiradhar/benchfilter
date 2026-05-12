@@ -30,12 +30,12 @@ from scipy.stats import spearmanr
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-ALL_LANGUAGES = ["bn", "de", "en", "es", "es_spanish_bench", "fr", "ja", "ru", "sw", "te", "th", "zh"]
+ALL_LANGUAGES = ["bn", "de", "en", "es", "fr", "ja", "ru", "sw", "te", "th", "zh"]
 
 LANG_LABELS = {
     "bn": "Bengali", "de": "German", "en": "English", "es": "Spanish",
-    "es_spanish_bench": "Spanish (bench)", "fr": "French", "ja": "Japanese",
-    "ru": "Russian", "sw": "Swahili", "te": "Telugu", "th": "Thai", "zh": "Chinese",
+    "fr": "French", "ja": "Japanese", "ru": "Russian", "sw": "Swahili",
+    "te": "Telugu", "th": "Thai", "zh": "Chinese",
 }
 
 CMAP_RY = LinearSegmentedColormap.from_list(
@@ -168,7 +168,24 @@ def main() -> None:
     plt.close(fig1)
     print("Saved spearman_heatmap.png")
 
-    # --- Figure 2: Item rank stability ---
+    # --- Figure 2: Kendall's W bar chart ---
+    fig2, ax2 = plt.subplots(figsize=(5, 4))
+    bars = ax2.bar(["Difficulty"], [w], color="steelblue", edgecolor="white", width=0.4)
+    ax2.set_ylim(0, 1)
+    ax2.set_ylabel("Kendall's W")
+    ax2.set_title("MGSM 1PL — Cross-language item rank concordance (Kendall's W)")
+    ax2.axhline(0.7, color="orange", linestyle="--", linewidth=1, label="W = 0.7 (strong)")
+    ax2.axhline(0.5, color="red", linestyle="--", linewidth=1, label="W = 0.5 (moderate)")
+    for bar, val in zip(bars, [w]):
+        ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
+                 f"{val:.3f}", ha="center", va="bottom", fontsize=10)
+    ax2.legend(fontsize=8)
+    fig2.tight_layout()
+    fig2.savefig(args.output_dir / "kendalls_w.png", dpi=150, bbox_inches="tight")
+    plt.close(fig2)
+    print("Saved kendalls_w.png")
+
+    # --- Figure 3: Item rank stability ---
     fig2, ax2 = plt.subplots(figsize=(10, 4))
     plot_item_stability(rank_std, ax2)
     fig2.tight_layout()
@@ -176,12 +193,12 @@ def main() -> None:
     plt.close(fig2)
     print("Saved item_rank_stability.png")
 
-    # --- Figure 3: Language dendrogram ---
-    fig3, ax3 = plt.subplots(figsize=(10, 5))
-    plot_language_dendrogram(diff_df, langs, ax3)
-    fig3.tight_layout()
-    fig3.savefig(args.output_dir / "language_dendrogram.png", dpi=150, bbox_inches="tight")
-    plt.close(fig3)
+    # --- Figure 4: Language dendrogram ---
+    fig4, ax4 = plt.subplots(figsize=(10, 5))
+    plot_language_dendrogram(diff_df, langs, ax4)
+    fig4.tight_layout()
+    fig4.savefig(args.output_dir / "language_dendrogram.png", dpi=150, bbox_inches="tight")
+    plt.close(fig4)
     print("Saved language_dendrogram.png")
 
     # --- CSVs ---
