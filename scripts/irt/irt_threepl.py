@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Train 4PL IRT models from all files in data/irt and save results.
+"""Train 3PL IRT models from all files in data/irt and save results.
+
+The 3PL model adds a per-item pseudo-guessing parameter (lower asymptote) to 2PL:
+  P(θ) = λ + (1 − λ) · σ(a · (θ − b))
+where b = difficulty, a = discrimination, λ = guessing (lower asymptote).
 
 Examples:
-    python scripts/irt/irt_fourpl.py
-    python scripts/irt/irt_fourpl.py --data_dir data/irt --output_dir results/4PL
+    python scripts/irt/irt_threepl.py
+    python scripts/irt/irt_threepl.py --data_dir data/irt --output_dir results/3PL
 """
 
 from __future__ import annotations
@@ -11,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import traceback
 from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,142 +23,15 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pyro
-import pyro.distributions as dist
 import torch
-import torch.distributions.constraints as constraints
 from py_irt.config import IrtConfig
 from py_irt.dataset import Dataset
 from py_irt.models import IrtModel
-from py_irt.models.abstract_model import IrtModel as AbstractIrtModel
 from py_irt.training import IrtModelTrainer
 from pyro.infer import SVI, Trace_ELBO
 import pyro.optim
 from rich.live import Live
 from rich.table import Table
-
-
-class TrueFourParamLog(AbstractIrtModel):
-    """True 4PL IRT model: P(θ) = c + (d − c) · σ(a · (θ − b))
-
-    Parameters per item:
-      b  (diff)      — difficulty
-      a  (disc)      — discrimination
-      c  (guessing)  — lower asymptote (pseudo-guessing)
-      d  (lambdas)   — upper asymptote (slipping)
-    """
-
-    def __init__(self, *, device: str, num_items: int, num_subjects: int,
-                 verbose: bool = False, **_kwargs):
-        super().__init__(num_items=num_items, num_subjects=num_subjects,
-                         device=device, verbose=verbose)
-
-    def model_hierarchical(self, subjects, items, obs):
-        mu_b = pyro.sample("mu_b", dist.Normal(
-            torch.tensor(0.0, device=self.device),
-            torch.tensor(1.0e6, device=self.device)))
-        u_b = pyro.sample("u_b", dist.Gamma(
-            torch.tensor(1.0, device=self.device),
-            torch.tensor(1.0, device=self.device)))
-        mu_theta = pyro.sample("mu_theta", dist.Normal(
-            torch.tensor(0.0, device=self.device),
-            torch.tensor(1.0e6, device=self.device)))
-        u_theta = pyro.sample("u_theta", dist.Gamma(
-            torch.tensor(1.0, device=self.device),
-            torch.tensor(1.0, device=self.device)))
-        mu_gamma = pyro.sample("mu_gamma", dist.Normal(
-            torch.tensor(0.0, device=self.device),
-            torch.tensor(1.0e6, device=self.device)))
-        u_gamma = pyro.sample("u_gamma", dist.Gamma(
-            torch.tensor(1.0, device=self.device),
-            torch.tensor(1.0, device=self.device)))
-
-        # lower asymptote (guessing): initialised at 0.25 (1-in-4 chance)
-        guessing = pyro.param(
-            "guessing",
-            torch.full((self.num_items,), 0.25, device=self.device),
-            constraint=constraints.unit_interval,
-        )
-        # upper asymptote (slipping): initialised at 0.90 (not pinned at 1)
-        lambdas = pyro.param(
-            "lambdas",
-            torch.full((self.num_items,), 0.90, device=self.device),
-            constraint=constraints.unit_interval,
-        )
-
-        with pyro.plate("thetas", self.num_subjects, device=self.device):
-            ability = pyro.sample("theta", dist.Normal(mu_theta, 1.0 / u_theta))
-        with pyro.plate("bs", self.num_items, device=self.device):
-            diff = pyro.sample("b", dist.Normal(mu_b, 1.0 / u_b))
-        with pyro.plate("gammas", self.num_items, device=self.device):
-            disc = pyro.sample("gamma", dist.Normal(mu_gamma, 1.0 / u_gamma))
-
-        with pyro.plate("observe_data", obs.size(0)):
-            p_star = torch.sigmoid(disc[items] * (ability[subjects] - diff[items]))
-            # ensure d >= c before computing ICC
-            spread = (lambdas[items] - guessing[items]).clamp(min=0.0)
-            p = (guessing[items] + spread * p_star).clamp(1e-6, 1 - 1e-6)
-            pyro.sample("obs", dist.Bernoulli(probs=p), obs=obs)
-
-    def guide_hierarchical(self, *_):
-        loc_mu_b = pyro.param("loc_mu_b", torch.tensor(0.0, device=self.device))
-        scale_mu_b = pyro.param("scale_mu_b", torch.tensor(1.0e2, device=self.device),
-                                constraint=constraints.positive)
-        loc_mu_gamma = pyro.param("loc_mu_gamma", torch.tensor(0.0, device=self.device))
-        scale_mu_gamma = pyro.param("scale_mu_gamma", torch.tensor(1.0e2, device=self.device),
-                                    constraint=constraints.positive)
-        loc_mu_theta = pyro.param("loc_mu_theta", torch.tensor(0.0, device=self.device))
-        scale_mu_theta = pyro.param("scale_mu_theta", torch.tensor(1.0e2, device=self.device),
-                                    constraint=constraints.positive)
-        alpha_b = pyro.param("alpha_b", torch.tensor(1.0, device=self.device),
-                             constraint=constraints.positive)
-        beta_b = pyro.param("beta_b", torch.tensor(1.0, device=self.device),
-                            constraint=constraints.positive)
-        alpha_gamma = pyro.param("alpha_gamma", torch.tensor(1.0, device=self.device),
-                                 constraint=constraints.positive)
-        beta_gamma = pyro.param("beta_gamma", torch.tensor(1.0, device=self.device),
-                                constraint=constraints.positive)
-        alpha_theta = pyro.param("alpha_theta", torch.tensor(1.0, device=self.device),
-                                 constraint=constraints.positive)
-        beta_theta = pyro.param("beta_theta", torch.tensor(1.0, device=self.device),
-                                constraint=constraints.positive)
-        m_theta = pyro.param("loc_ability", torch.zeros(self.num_subjects, device=self.device))
-        s_theta = pyro.param("scale_ability", torch.ones(self.num_subjects, device=self.device),
-                             constraint=constraints.positive)
-        m_b = pyro.param("loc_diff", torch.zeros(self.num_items, device=self.device))
-        s_b = pyro.param("scale_diff", torch.ones(self.num_items, device=self.device),
-                         constraint=constraints.positive)
-        m_gamma = pyro.param("loc_disc", torch.zeros(self.num_items, device=self.device))
-        s_gamma = pyro.param("scale_disc", torch.ones(self.num_items, device=self.device),
-                             constraint=constraints.positive)
-
-        pyro.sample("mu_b", dist.Normal(loc_mu_b, scale_mu_b))
-        pyro.sample("u_b", dist.Gamma(alpha_b, beta_b))
-        pyro.sample("mu_gamma", dist.Normal(loc_mu_gamma, scale_mu_gamma))
-        pyro.sample("u_gamma", dist.Gamma(alpha_gamma, beta_gamma))
-        pyro.sample("mu_theta", dist.Normal(loc_mu_theta, scale_mu_theta))
-        pyro.sample("u_theta", dist.Gamma(alpha_theta, beta_theta))
-
-        with pyro.plate("thetas", self.num_subjects, device=self.device):
-            pyro.sample("theta", dist.Normal(m_theta, s_theta))
-        with pyro.plate("bs", self.num_items, device=self.device):
-            pyro.sample("b", dist.Normal(m_b, s_b))
-        with pyro.plate("gammas", self.num_items, device=self.device):
-            pyro.sample("gamma", dist.Normal(m_gamma, s_gamma))
-
-    def export(self):
-        return {
-            "ability":  pyro.param("loc_ability").data.tolist(),
-            "diff":     pyro.param("loc_diff").data.tolist(),
-            "disc":     pyro.param("loc_disc").data.tolist(),
-            "guessing": pyro.param("guessing").data.tolist(),
-            "lambdas":  pyro.param("lambdas").data.tolist(),
-        }
-
-    def get_model(self):
-        return self.model_hierarchical
-
-    def get_guide(self):
-        return self.guide_hierarchical
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -279,7 +155,7 @@ def save_loss_plot(losses: list[float], plot_path: Path, title: str) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train a 4PL IRT model for every jsonlines file in data/irt."
+        description="Train a 3PL IRT model for every jsonlines file in data/irt."
     )
     parser.add_argument(
         "--data_dir",
@@ -290,23 +166,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output_dir",
         type=Path,
-        default=Path("results/4PL"),
+        default=Path("results/3PL"),
         help="Directory to write trained parameter files.",
     )
-    parser.add_argument("--epochs", type=int, default=5000, help="Training epochs.")
-    parser.add_argument(
-        "--skip_existing",
-        action="store_true",
-        help="Skip training if the output file already exists.",
-    )
+    parser.add_argument("--epochs", type=int, default=3000, help="Training epochs.")
     parser.add_argument(
         "--log_every",
         type=int,
-        default=1000,
+        default=500,
         help="Log interval in training epochs.",
     )
     parser.add_argument("--dropout", type=float, default=0.5, help="Dropout value.")
-    parser.add_argument("--lr", type=float, default=0.05, help="Learning rate.")
+    parser.add_argument("--lr", type=float, default=0.1, help="Learning rate.")
     parser.add_argument(
         "--lr_decay", type=float, default=0.9999, help="Learning rate decay."
     )
@@ -327,6 +198,11 @@ def parse_args() -> argparse.Namespace:
         default=Path("logs/irt"),
         help="Directory for run logs.",
     )
+    parser.add_argument(
+        "--skip_existing",
+        action="store_true",
+        help="Skip training if the output file already exists.",
+    )
     args = parser.parse_args()
     args.data_dir = resolve_repo_path(args.data_dir)
     args.output_dir = resolve_repo_path(args.output_dir)
@@ -337,9 +213,9 @@ def parse_args() -> argparse.Namespace:
 def setup_logger(log_dir: Path) -> tuple[logging.Logger, Path]:
     log_dir.mkdir(parents=True, exist_ok=True)
     run_date = datetime.now(timezone.utc).strftime("%Y%m%d")
-    log_path = log_dir / f"irt_fourpl_{run_date}.log"
+    log_path = log_dir / f"irt_threepl_{run_date}.log"
 
-    logger = logging.getLogger("irt_fourpl")
+    logger = logging.getLogger("irt_threepl")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
     logger.propagate = False
@@ -355,7 +231,6 @@ def setup_logger(log_dir: Path) -> tuple[logging.Logger, Path]:
 def resolve_input_files(data_dir: Path) -> list[Path]:
     if not data_dir.exists():
         raise FileNotFoundError(f"Data directory does not exist: {data_dir}")
-
     candidates = sorted(path for path in data_dir.rglob("*.jsonlines") if path.is_file())
     if not candidates:
         raise FileNotFoundError(f"No jsonlines files found in {data_dir}")
@@ -363,13 +238,13 @@ def resolve_input_files(data_dir: Path) -> list[Path]:
 
 
 def build_output_path(input_file: Path, output_dir: Path) -> Path:
-    return output_dir / f"{input_file.stem}_4pl.json"
+    return output_dir / f"{input_file.stem}_3pl.json"
 
 
 def train_one_file(input_path: Path, output_path: Path, args: argparse.Namespace) -> None:
     dataset = Dataset.from_jsonlines(input_path)
     config = IrtConfig(
-        model_type="4pl",
+        model_type="3pl",
         epochs=args.epochs,
         log_every=args.log_every,
         dropout=args.dropout,
@@ -385,7 +260,7 @@ def train_one_file(input_path: Path, output_path: Path, args: argparse.Namespace
     )
     trainer.train(epochs=args.epochs, device=args.device)
     output_path.write_text(json.dumps(trainer.last_params, indent=2), encoding="utf-8")
-    save_loss_plot(trainer.losses, output_path.with_suffix(".png"), f"4PL Training Loss — {input_path.stem}")
+    save_loss_plot(trainer.losses, output_path.with_suffix(".png"), f"3PL Training Loss — {input_path.stem}")
 
 
 def main() -> None:
@@ -420,18 +295,21 @@ def main() -> None:
             if args.skip_existing and output_file.exists():
                 logger.info("Skipping %s (output already exists)", input_file)
                 continue
-            logger.info("Training 4PL on %s", input_file)
+            logger.info("Training 3PL on %s", input_file)
             try:
                 train_one_file(input_file, output_file, args)
             except Exception:
+                import traceback
                 failures += 1
-                logger.error("Failed 4PL run for %s", input_file)
+                logger.error("Failed 3PL run for %s", input_file)
                 logger.error("%s", traceback.format_exc())
                 continue
             logger.info("Saved model params to %s", output_file)
+
         if failures:
             logger.warning("Completed with %d failure(s)", failures)
         logger.info("Run completed successfully")
+
 
 if __name__ == "__main__":
     main()

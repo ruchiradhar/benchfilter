@@ -39,15 +39,12 @@ LANG_LABELS = {
     "te": "Telugu", "th": "Thai", "zh": "Chinese",
 }
 
-CMAP_RY = LinearSegmentedColormap.from_list(
-    "red_yellow",
+CMAP_RYG = LinearSegmentedColormap.from_list(
+    "red_yellow_green",
     [
-        (0.00, "#8B0000"),
-        (0.20, "#CC2200"),
-        (0.40, "#DD6600"),
-        (0.60, "#EE9900"),
-        (0.80, "#FFCC00"),
-        (1.00, "#FFE800"),
+        (0.00, "#CC0000"),
+        (0.50, "#FFFF00"),
+        (1.00, "#007700"),
     ],
 )
 
@@ -100,15 +97,15 @@ def plot_spearman_heatmap(corr_df: pd.DataFrame, w: float, langs: list[str],
                           param_label: str, ax: plt.Axes) -> object:
     labels = [LANG_LABELS[l] for l in langs]
     data = corr_df.values
-    im = ax.imshow(data, vmin=0, vmax=1, cmap=CMAP_RY, aspect="auto")
+    im = ax.imshow(data, vmin=-1, vmax=1, cmap=CMAP_RYG, aspect="auto")
     ax.set_xticks(range(len(labels)))
     ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
-    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=10)
+    ax.set_yticklabels(labels, fontsize=10)
     for i in range(len(labels)):
         for j in range(len(labels)):
-            color = "black" if data[i, j] > 0.5 else "white"
-            ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center", fontsize=6.5, color=color)
+            color = "black" if abs(data[i, j]) < 0.5 else "white"
+            ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center", fontsize=7, color=color)
     ax.set_title(f"MGSM 2PL — Item {param_label} rank correlation\nKendall's W = {w:.3f}", fontsize=10)
     return im
 

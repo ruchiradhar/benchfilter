@@ -41,15 +41,12 @@ LANG_LABELS = {
     "ja": "Japanese", "sw": "Swahili", "zh": "Chinese",
 }
 
-CMAP_RY = LinearSegmentedColormap.from_list(
-    "red_yellow",
+CMAP_RYG = LinearSegmentedColormap.from_list(
+    "red_yellow_green",
     [
-        (0.00, "#8B0000"),
-        (0.20, "#CC2200"),
-        (0.40, "#DD6600"),
-        (0.60, "#EE9900"),
-        (0.80, "#FFCC00"),
-        (1.00, "#FFE800"),
+        (0.00, "#CC0000"),
+        (0.50, "#FFFF00"),
+        (1.00, "#007700"),
     ],
 )
 
@@ -95,15 +92,15 @@ def rank_df(df: pd.DataFrame) -> pd.DataFrame:
 def plot_spearman_heatmap(corr_df: pd.DataFrame, domain: str, w: float, ax: plt.Axes, param_label: str) -> object:
     labels = [LANG_LABELS[l] for l in corr_df.columns]
     data = corr_df.values
-    im = ax.imshow(data, vmin=0, vmax=1, cmap=CMAP_RY, aspect="auto")
+    im = ax.imshow(data, vmin=-1, vmax=1, cmap=CMAP_RYG, aspect="auto")
     ax.set_xticks(range(len(labels)))
     ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
-    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=10)
+    ax.set_yticklabels(labels, fontsize=10)
     for i in range(len(labels)):
         for j in range(len(labels)):
-            color = "black" if data[i, j] > 0.5 else "white"
-            ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center", fontsize=6.5, color=color)
+            color = "black" if abs(data[i, j]) < 0.5 else "white"
+            ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center", fontsize=7, color=color)
     ax.set_title(f"{domain.replace('_', ' ').title()} [{param_label}]\nW = {w:.3f}", fontsize=9)
     return im
 
@@ -194,6 +191,34 @@ def main() -> None:
     fig2.savefig(args.output_dir / "spearman_heatmaps_disc.png", dpi=150, bbox_inches="tight")
     plt.close(fig2)
     print("Saved spearman_heatmaps_disc.png")
+
+    # --- Figure 2b: Average Spearman heatmaps (diff and disc) across all domains ---
+    avg_diff_data = np.mean([corr_diff[d].values for d in DOMAINS], axis=0)
+    avg_disc_data = np.mean([corr_disc[d].values for d in DOMAINS], axis=0)
+    avg_w_diff = float(np.mean([w_diff[d] for d in DOMAINS]))
+    avg_w_disc = float(np.mean([w_disc[d] for d in DOMAINS]))
+    labels_avg = [LANG_LABELS[l] for l in LANGUAGES]
+
+    for param_label, avg_data, avg_w_val, fname in [
+        ("difficulty",      avg_diff_data, avg_w_diff, "spearman_heatmap_avg_diff.png"),
+        ("discrimination",  avg_disc_data, avg_w_disc, "spearman_heatmap_avg_disc.png"),
+    ]:
+        figA, axA = plt.subplots(figsize=(8, 7))
+        imA = axA.imshow(avg_data, vmin=-1, vmax=1, cmap=CMAP_RYG, aspect="auto")
+        axA.set_xticks(range(len(labels_avg)))
+        axA.set_yticks(range(len(labels_avg)))
+        axA.set_xticklabels(labels_avg, rotation=45, ha="right", fontsize=10)
+        axA.set_yticklabels(labels_avg, fontsize=10)
+        for i in range(len(labels_avg)):
+            for j in range(len(labels_avg)):
+                tc = "black" if abs(avg_data[i, j]) < 0.5 else "white"
+                axA.text(j, i, f"{avg_data[i, j]:.2f}", ha="center", va="center", fontsize=7, color=tc)
+        axA.set_title(f"MMLU 2PL — Average Spearman ρ [{param_label}] across domains\nAvg Kendall's W = {avg_w_val:.3f}", fontsize=11)
+        figA.colorbar(imA, ax=axA, label="Spearman ρ", shrink=0.8)
+        figA.tight_layout()
+        figA.savefig(args.output_dir / fname, dpi=150, bbox_inches="tight")
+        plt.close(figA)
+        print(f"Saved {fname}")
 
     # --- Figure 3: Kendall's W — diff vs disc grouped bar ---
     fig3, ax3 = plt.subplots(figsize=(10, 5))

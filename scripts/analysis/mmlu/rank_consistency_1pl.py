@@ -31,17 +31,12 @@ import scipy.cluster.hierarchy as sch
 import scipy.spatial.distance as ssd
 from scipy.stats import spearmanr
 
-# Red (low ρ) → orange → yellow (high ρ); anchored at 0–1 so the diagonal
-# (always 1.0) maps to pure yellow and near-zero correlations map to deep red.
-CMAP_RY = LinearSegmentedColormap.from_list(
-    "red_yellow",
+CMAP_RYG = LinearSegmentedColormap.from_list(
+    "red_yellow_green",
     [
-        (0.00, "#8B0000"),  # dark red
-        (0.20, "#CC2200"),  # red
-        (0.40, "#DD6600"),  # dark orange
-        (0.60, "#EE9900"),  # orange
-        (0.80, "#FFCC00"),  # amber
-        (1.00, "#FFE800"),  # bright yellow
+        (0.00, "#CC0000"),
+        (0.50, "#FFFF00"),
+        (1.00, "#007700"),
     ],
 )
 
@@ -101,19 +96,16 @@ def rank_matrix(diff_df: pd.DataFrame) -> pd.DataFrame:
 def plot_spearman_heatmap(corr_df: pd.DataFrame, domain: str, w: float, ax: plt.Axes) -> None:
     labels = [LANG_LABELS[l] for l in corr_df.columns]
     data = corr_df.values
-    # vmin=0, vmax=1 stretches the full red→yellow range over observed [0, 1];
-    # the diagonal (1.0) lands on pure yellow; near-zero values land on dark red.
-    im = ax.imshow(data, vmin=0, vmax=1, cmap=CMAP_RY, aspect="auto")
+    im = ax.imshow(data, vmin=-1, vmax=1, cmap=CMAP_RYG, aspect="auto")
     ax.set_xticks(range(len(labels)))
     ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
-    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=10)
+    ax.set_yticklabels(labels, fontsize=10)
     for i in range(len(labels)):
         for j in range(len(labels)):
-            # dark text on yellow (high), white text on red (low)
-            text_color = "black" if data[i, j] > 0.5 else "white"
+            text_color = "black" if abs(data[i, j]) < 0.5 else "white"
             ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center",
-                    fontsize=6.5, color=text_color)
+                    fontsize=7, color=text_color)
     ax.set_title(f"{domain.replace('_', ' ').title()}\nKendall's W = {w:.3f}", fontsize=9)
     return im
 
@@ -189,6 +181,29 @@ def main() -> None:
     fig1.savefig(args.output_dir / "spearman_heatmaps.png", dpi=150, bbox_inches="tight")
     plt.close(fig1)
     print("Saved spearman_heatmaps.png")
+
+    # --- Figure 1b: Average Spearman heatmap across all domains ---
+    avg_corr_data = np.mean([corr_matrices[d].values for d in DOMAINS], axis=0)
+    avg_corr = pd.DataFrame(avg_corr_data, index=LANGUAGES, columns=LANGUAGES)
+    avg_w = float(np.mean([kendall_ws[d] for d in DOMAINS]))
+    fig1b, ax1b = plt.subplots(figsize=(8, 7))
+    labels_avg = [LANG_LABELS[l] for l in LANGUAGES]
+    data_avg = avg_corr.values
+    im1b = ax1b.imshow(data_avg, vmin=-1, vmax=1, cmap=CMAP_RYG, aspect="auto")
+    ax1b.set_xticks(range(len(labels_avg)))
+    ax1b.set_yticks(range(len(labels_avg)))
+    ax1b.set_xticklabels(labels_avg, rotation=45, ha="right", fontsize=10)
+    ax1b.set_yticklabels(labels_avg, fontsize=10)
+    for i in range(len(labels_avg)):
+        for j in range(len(labels_avg)):
+            tc = "black" if abs(data_avg[i, j]) < 0.5 else "white"
+            ax1b.text(j, i, f"{data_avg[i, j]:.2f}", ha="center", va="center", fontsize=7, color=tc)
+    ax1b.set_title(f"MMLU 1PL — Average Spearman ρ across domains\nAvg Kendall's W = {avg_w:.3f}", fontsize=11)
+    fig1b.colorbar(im1b, ax=ax1b, label="Spearman ρ", shrink=0.8)
+    fig1b.tight_layout()
+    fig1b.savefig(args.output_dir / "spearman_heatmap_avg.png", dpi=150, bbox_inches="tight")
+    plt.close(fig1b)
+    print("Saved spearman_heatmap_avg.png")
 
     # --- Figure 2: Kendall's W bar chart ---
     fig2, ax2 = plt.subplots(figsize=(8, 4))
