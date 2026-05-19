@@ -9,7 +9,7 @@ overlap (Jaccard similarity) across the three model pairs.
 IIF formulas at θ=0:
   1PL: I = P(1−P)                          P = sigmoid(−diff)
   2PL: I = disc² · P(1−P)                  P = sigmoid(disc·(−diff))
-  3PL: I = disc² · (P−λ)² · (1−P) / P     P = λ + (1−λ)·sigmoid(disc·(−diff))
+  3PL: I = disc² · (P−λ)² · (1−P) / ((1−λ)² · P)     P = λ + (1−λ)·sigmoid(disc·(−diff))
 
 Items are ranked by I; the top --top_frac fraction are selected per model.
 Jaccard(A,B) = |A∩B| / |A∪B| is computed for each pair (1PL/2PL, 1PL/3PL,
@@ -75,7 +75,7 @@ def iif_3pl(diff: np.ndarray, disc: np.ndarray, lam: np.ndarray) -> np.ndarray:
     p_star = sigmoid(disc * (-diff))
     p = lam + (1.0 - lam) * p_star
     p = np.clip(p, EPS, 1.0 - EPS)
-    return disc ** 2 * (p - lam) ** 2 * (1.0 - p) / p
+    return disc ** 2 * (p - lam) ** 2 * (1.0 - p) / ((1.0 - lam) ** 2 * p)
 
 
 def load_params(results_root: Path, pl: str, stem: str) -> dict | None:
@@ -214,8 +214,7 @@ def plot_concordance(df: pd.DataFrame, top_frac: float, output_path: Path) -> No
         ax.set_title(f"{benchmark}  (n={n_slices} slices, avg top-k={avg_k})", fontsize=10)
 
         ax.axhline(1.0, color="gray", linestyle=":", linewidth=0.8)
-        ax.axhline(0.5, color="orange", linestyle="--", linewidth=0.8, label="J = 0.5")
-        ax.axhline(0.25, color="red", linestyle="--", linewidth=0.8, label="J = 0.25")
+        ax.axhline(1/3, color="red", linestyle="--", linewidth=0.8, label="random baseline")
         ax.legend(fontsize=8, loc="lower right")
 
         for i, vals in enumerate(data_per_pair):
