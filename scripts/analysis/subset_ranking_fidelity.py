@@ -124,7 +124,8 @@ def iif_3pl(diff: np.ndarray, disc: np.ndarray, lam: np.ndarray) -> np.ndarray:
     p_star = sigmoid(disc * (-diff))
     p = lam + (1.0 - lam) * p_star
     p = np.clip(p, EPS, 1.0 - EPS)
-    return disc ** 2 * (p - lam) ** 2 * (1.0 - p) / p
+    lam_c = np.clip(lam, 0.0, 1.0 - EPS)
+    return disc ** 2 * (p - lam_c) ** 2 * (1.0 - p) / ((1.0 - lam_c) ** 2 * p)
 
 
 # ---------------------------------------------------------------------------
