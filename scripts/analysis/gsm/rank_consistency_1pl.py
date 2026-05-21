@@ -105,7 +105,6 @@ def plot_spearman_heatmap(corr_df: pd.DataFrame, w: float, langs: list[str], ax:
         for j in range(len(labels)):
             color = "black" if abs(data[i, j]) < 0.5 else "white"
             ax.text(j, i, f"{data[i, j]:.2f}", ha="center", va="center", fontsize=7, color=color)
-    ax.set_title(f"MGSM 1PL — Item difficulty rank correlation\nKendall's W = {w:.3f}", fontsize=10)
     return im
 
 
@@ -114,7 +113,6 @@ def plot_item_stability(rank_std: pd.Series, ax: plt.Axes) -> None:
     ax.bar(range(len(sorted_std)), sorted_std.values, color="steelblue", width=1.0, linewidth=0)
     ax.set_xlabel("Item (sorted by stability)", fontsize=9)
     ax.set_ylabel("Rank std dev across languages", fontsize=9)
-    ax.set_title("MGSM 1PL — Item rank stability (lower = more consistent)", fontsize=10)
     ax.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
 
 
@@ -170,7 +168,6 @@ def main() -> None:
     bars = ax2.bar(["Difficulty"], [w], color="steelblue", edgecolor="white", width=0.4)
     ax2.set_ylim(0, 1)
     ax2.set_ylabel("Kendall's W")
-    ax2.set_title("MGSM 1PL — Cross-language item rank concordance (Kendall's W)")
     ax2.axhline(0.7, color="orange", linestyle="--", linewidth=1, label="W = 0.7 (strong)")
     ax2.axhline(0.5, color="red", linestyle="--", linewidth=1, label="W = 0.5 (moderate)")
     for bar, val in zip(bars, [w]):

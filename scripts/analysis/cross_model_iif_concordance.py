@@ -175,12 +175,6 @@ def build_summary(df: pd.DataFrame) -> pd.DataFrame:
 
 def plot_concordance(df: pd.DataFrame, top_frac: float, output_path: Path) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(11, 5), sharey=True)
-    fig.suptitle(
-        f"Cross-model item concordance via Item Information Function\n"
-        f"(Jaccard similarity of top-{int(top_frac*100)}% items by IIF at θ=0)",
-        fontsize=11,
-    )
-
     for ax, benchmark in zip(axes, ["MGSM", "MMLU"]):
         sub = df[df["benchmark"] == benchmark]
         color = BENCHMARK_COLORS[benchmark]
@@ -211,8 +205,6 @@ def plot_concordance(df: pd.DataFrame, top_frac: float, output_path: Path) -> No
 
         n_slices = len(sub)
         avg_k = int(sub["top_k"].mean())
-        ax.set_title(f"{benchmark}  (n={n_slices} slices, avg top-k={avg_k})", fontsize=10)
-
         ax.axhline(1.0, color="gray", linestyle=":", linewidth=0.8)
         ax.axhline(1/3, color="red", linestyle="--", linewidth=0.8, label="random baseline")
         ax.legend(fontsize=8, loc="lower right")

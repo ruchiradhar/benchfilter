@@ -107,7 +107,6 @@ def plot_heatmap(ax: plt.Axes, mat: np.ndarray, title: str, w: float) -> object:
             color = "black" if abs(mat[i, j]) < 0.5 else "white"
             ax.text(j, i, f"{mat[i, j]:.2f}", ha="center", va="center",
                     fontsize=6.5, color=color)
-    ax.set_title(f"{title}\nKendall's W = {w:.3f}", fontsize=9)
     return im
 
 
@@ -150,12 +149,6 @@ def main() -> None:
     # --- 2×3 figure: rows = Science / Non-science, cols = 1PL / 2PL / 3PL ---
     models = ["1PL", "2PL", "3PL"]
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
-    fig.suptitle(
-        "MMLU — Item difficulty rank correlation: Science vs Non-science domains\n"
-        "(element-wise average Spearman ρ; difficulty parameter across 1PL, 2PL, 3PL)",
-        fontsize=11, y=1.02,
-    )
-
     last_im = None
     row_labels = [
         ("Science", "STEM + Medical", science_mat, science_w),

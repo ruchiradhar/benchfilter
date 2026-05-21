@@ -573,15 +573,6 @@ def plot_held_out_fidelity(
     held-out (correct) ranking fidelity, for each IRT model.
     """
     fig, axes = plt.subplots(2, 2, figsize=(12, 9), sharey=True)
-    fig.suptitle(
-        f"Ranking fidelity: in-sample (top row) vs. held-out model split (bottom row)\n"
-        f"Spearman ρ between subset accuracy and full-benchmark accuracy\n"
-        f"top-{int(top_frac*100)}% items by IIF at θ=0  |  "
-        f"train={int((1-test_frac)*100)}% / test={int(test_frac*100)}% model split  |  "
-        f"dashed = random-item baseline",
-        fontsize=9,
-    )
-
     for col, benchmark in enumerate(["MGSM", "MMLU"]):
         for row, (df, label) in enumerate([
             (df_insample, "In-sample (all models, reference)"),
@@ -622,7 +613,6 @@ def plot_held_out_fidelity(
                               colors=color, linestyles="dashed", linewidth=1.5)
 
             n_slices = len(sub["slice"].unique()) if "slice" in sub.columns else len(sub)
-            ax.set_title(f"{benchmark} — {label}  (n={n_slices} slices)", fontsize=8)
             ax.set_xticks(positions)
             ax.set_xticklabels(PL_MODELS, fontsize=10)
             ax.set_ylim(-0.5, 1.08)
@@ -656,13 +646,6 @@ def plot_accuracy_scatter(
     R²) are annotated in each panel.
     """
     fig, axes = plt.subplots(2, 3, figsize=(14, 9))
-    fig.suptitle(
-        f"{title_prefix}: subset accuracy vs. full-benchmark accuracy\n"
-        f"top-{int(top_frac * 100)}% items by IIF at θ=0  |  "
-        f"each point = one (model, slice) pair  |  dashed = ideal y=x",
-        fontsize=9,
-    )
-
     for row_idx, benchmark in enumerate(["MGSM", "MMLU"]):
         for col_idx, pl in enumerate(PL_MODELS):
             ax = axes[row_idx][col_idx]
@@ -697,7 +680,6 @@ def plot_accuracy_scatter(
                 transform=ax.transAxes, va="top", fontsize=7.5,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.75),
             )
-            ax.set_title(f"{benchmark} — {pl}  (n={len(sub)})", fontsize=9)
             ax.set_xlabel("Subset accuracy", fontsize=8)
             ax.set_ylabel("Full accuracy", fontsize=8)
             ax.set_aspect("equal", adjustable="box")
@@ -854,13 +836,6 @@ def run_crosslingual(
 
 def plot_same_language(df: pd.DataFrame, top_frac: float, output_path: Path) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(11, 5), sharey=True)
-    fig.suptitle(
-        f"Subset ranking fidelity — Spearman ρ (full vs. top-{int(top_frac*100)}% IIF subset)\n"
-        f"Each dot is one benchmark slice; annotated values are medians. "
-        f"Dashed lines = random-subset baseline (avg over {N_RANDOM_TRIALS} draws).",
-        fontsize=9,
-    )
-
     for ax, benchmark in zip(axes, ["MGSM", "MMLU"]):
         sub = df[df["benchmark"] == benchmark]
         positions = np.arange(len(PL_MODELS))
@@ -894,7 +869,6 @@ def plot_same_language(df: pd.DataFrame, top_frac: float, output_path: Path) -> 
                           colors=color, linestyles="dashed", linewidth=1.5)
 
         n_slices = len(sub["slice"].unique())
-        ax.set_title(f"{benchmark}  (n={n_slices} slices)", fontsize=10)
         ax.set_xticks(positions)
         ax.set_xticklabels(PL_MODELS, fontsize=10)
         ax.set_ylim(-0.5, 1.05)
@@ -935,16 +909,6 @@ def plot_crosslingual_heatmaps(
     n = len(languages)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    domain_note = " (averaged across domains)" if benchmark == "MMLU" else ""
-    prefix = f"{title_prefix} " if title_prefix else ""
-    fig.suptitle(
-        f"{prefix}{benchmark} cross-lingual subset ranking fidelity — Spearman ρ{domain_note}\n"
-        f"(top-{int(top_frac*100)}% items from *source* IRT evaluated in *target* language)\n"
-        f"Row = source language (IRT fitted here), Col = target language (evaluated here). "
-        f"Diagonal = same-language.",
-        fontsize=9,
-    )
-
     for ax, pl in zip(axes, PL_MODELS):
         sub = sub_all[sub_all["pl"] == pl]
         mat = np.full((n, n), np.nan)
@@ -963,7 +927,7 @@ def plot_crosslingual_heatmaps(
         ax.set_yticks(range(n))
         ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
         ax.set_yticklabels(labels, fontsize=7)
-        ax.set_title(f"{pl}  (off-diag avg ρ = {avg_rho:.3f})", fontsize=10)
+        ax.set_title(pl, fontsize=11, fontweight="bold")
 
         for i in range(n):
             for j in range(n):

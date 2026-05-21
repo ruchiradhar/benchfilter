@@ -168,7 +168,6 @@ def main() -> None:
 
     # --- Figure 1: Spearman heatmaps — difficulty ---
     fig1, axes1 = plt.subplots(2, 3, figsize=(16, 10))
-    fig1.suptitle("MMLU 2PL — Spearman rank correlation of item difficulty across languages", fontsize=12, y=1.01)
     last_im = None
     for ax, domain in zip(axes1.flat, DOMAINS):
         im = plot_spearman_heatmap(corr_diff[domain], domain, w_diff[domain], ax, "difficulty")
@@ -181,7 +180,6 @@ def main() -> None:
 
     # --- Figure 2: Spearman heatmaps — discrimination ---
     fig2, axes2 = plt.subplots(2, 3, figsize=(16, 10))
-    fig2.suptitle("MMLU 2PL — Spearman rank correlation of item discrimination across languages", fontsize=12, y=1.01)
     last_im = None
     for ax, domain in zip(axes2.flat, DOMAINS):
         im = plot_spearman_heatmap(corr_disc[domain], domain, w_disc[domain], ax, "discrimination")
@@ -213,7 +211,6 @@ def main() -> None:
             for j in range(len(labels_avg)):
                 tc = "black" if abs(avg_data[i, j]) < 0.5 else "white"
                 axA.text(j, i, f"{avg_data[i, j]:.2f}", ha="center", va="center", fontsize=7, color=tc)
-        axA.set_title(f"MMLU 2PL — Average Spearman ρ [{param_label}] across domains\nAvg Kendall's W = {avg_w_val:.3f}", fontsize=11)
         figA.colorbar(imA, ax=axA, label="Spearman ρ", shrink=0.8)
         figA.tight_layout()
         figA.savefig(args.output_dir / fname, dpi=150, bbox_inches="tight")
@@ -231,7 +228,6 @@ def main() -> None:
     ax3.set_xticklabels(domain_labels)
     ax3.set_ylim(0, 1)
     ax3.set_ylabel("Kendall's W")
-    ax3.set_title("MMLU 2PL — Cross-language item rank concordance (Kendall's W)")
     ax3.axhline(0.7, color="red", linestyle="--", linewidth=1, label="W = 0.7")
     ax3.axhline(0.5, color="orange", linestyle="--", linewidth=1, label="W = 0.5")
     for bar in list(bars1) + list(bars2):
@@ -245,7 +241,6 @@ def main() -> None:
 
     # --- Figure 4: Item rank stability — diff (top) and disc (bottom) ---
     fig4, axes4 = plt.subplots(2, 6, figsize=(22, 7), sharey=False)
-    fig4.suptitle("MMLU 2PL — Item rank stability across languages (lower = more consistent)", fontsize=12)
     for col, domain in enumerate(DOMAINS):
         plot_item_stability(stab_diff[domain], domain, axes4[0, col], "diff")
         plot_item_stability(stab_disc[domain], domain, axes4[1, col], "disc")

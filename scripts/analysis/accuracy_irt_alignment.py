@@ -175,7 +175,7 @@ def mantel_test(corr_a: pd.DataFrame, corr_b: pd.DataFrame,
 # ---------------------------------------------------------------------------
 
 def plot_dendrogram(corr_df: pd.DataFrame, ax: plt.Axes,
-                    title: str, color: str) -> None:
+                    color: str) -> None:
     langs = corr_df.columns.tolist()
     dist = ssd.squareform(np.clip(1.0 - corr_df.values, 0, None), checks=False)
     linkage = sch.linkage(dist, method="average")
@@ -185,7 +185,6 @@ def plot_dendrogram(corr_df: pd.DataFrame, ax: plt.Axes,
         color_threshold=0.3 * max(linkage[:, 2]),
         link_color_func=lambda _: color,
     )
-    ax.set_title(title, fontsize=9)
     ax.set_ylabel("1 − Spearman ρ", fontsize=7)
     ax.tick_params(axis="y", labelsize=7)
 
@@ -198,29 +197,21 @@ def make_dendrogram_figure(bm_results: dict, acc_corrs: dict,
                            output_path: Path) -> None:
     # 2 rows (benchmarks) × 4 cols (1PL, 2PL, 3PL, Accuracy)
     fig, axes = plt.subplots(2, 4, figsize=(20, 9))
-    fig.suptitle(
-        "Language clustering: IRT difficulty (1PL / 2PL / 3PL) vs model accuracy",
-        fontsize=12,
-    )
-    col_titles = ["IRT 1PL (diff)", "IRT 2PL (diff)", "IRT 3PL (diff)", "Accuracy"]
-    for col, title in enumerate(col_titles):
-        axes[0, col].set_title(title, fontsize=10, fontweight="bold", pad=6)
-
     for row_i, bm in enumerate(["MGSM", "MMLU"]):
         color = BM_COLORS[bm]
         n_models = bm_results[bm]["1PL"]["n_models"]
         for col_i, pl in enumerate(PLS):
             plot_dendrogram(
                 bm_results[bm][pl]["irt_corr"], axes[row_i, col_i],
-                f"{bm}", color,
+                color,
             )
         plot_dendrogram(
             acc_corrs[bm], axes[row_i, 3],
-            f"{bm}  (n={n_models})", color,
+            color,
         )
         axes[row_i, 0].set_ylabel(f"{bm}\n1 − Spearman ρ", fontsize=8)
 
-    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.tight_layout()
     fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved {output_path.name}")

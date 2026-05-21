@@ -170,8 +170,6 @@ def main() -> None:
 
     # --- Figure 1: Spearman heatmaps (one per domain, 2×3 grid) ---
     fig1, axes = plt.subplots(2, 3, figsize=(16, 10))
-    fig1.suptitle("MMLU 1PL — Spearman rank correlation of item difficulty across languages",
-                  fontsize=12, y=1.01)
     last_im = None
     for ax, domain in zip(axes.flat, DOMAINS):
         im = plot_spearman_heatmap(corr_matrices[domain], domain, kendall_ws[domain], ax)
@@ -198,7 +196,6 @@ def main() -> None:
         for j in range(len(labels_avg)):
             tc = "black" if abs(data_avg[i, j]) < 0.5 else "white"
             ax1b.text(j, i, f"{data_avg[i, j]:.2f}", ha="center", va="center", fontsize=7, color=tc)
-    ax1b.set_title(f"MMLU 1PL — Average Spearman ρ across domains\nAvg Kendall's W = {avg_w:.3f}", fontsize=11)
     fig1b.colorbar(im1b, ax=ax1b, label="Spearman ρ", shrink=0.8)
     fig1b.tight_layout()
     fig1b.savefig(args.output_dir / "spearman_heatmap_avg.png", dpi=150, bbox_inches="tight")
@@ -212,7 +209,6 @@ def main() -> None:
     bars = ax2.bar(domain_labels, w_values, color="steelblue", edgecolor="white")
     ax2.set_ylim(0, 1)
     ax2.set_ylabel("Kendall's W")
-    ax2.set_title("MMLU 1PL — Cross-language item rank concordance (Kendall's W)")
     ax2.axhline(0.7, color="orange", linestyle="--", linewidth=1, label="W = 0.7 (strong)")
     ax2.axhline(0.5, color="red", linestyle="--", linewidth=1, label="W = 0.5 (moderate)")
     for bar, w in zip(bars, w_values):
@@ -226,8 +222,6 @@ def main() -> None:
 
     # --- Figure 3: Item rank stability per domain (2×3 grid) ---
     fig3, axes3 = plt.subplots(2, 3, figsize=(16, 7))
-    fig3.suptitle("MMLU 1PL — Item rank stability across languages\n(lower = more consistent)",
-                  fontsize=12)
     for ax, domain in zip(axes3.flat, DOMAINS):
         plot_item_stability(stability[domain], domain, ax)
     fig3.tight_layout()
