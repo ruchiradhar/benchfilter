@@ -110,13 +110,15 @@ def plot_spearman_heatmap(corr_df: pd.DataFrame, domain: str, w: float, ax: plt.
     return im
 
 
-def plot_item_stability(rank_std: pd.Series, domain: str, ax: plt.Axes) -> None:
+def plot_item_stability(rank_std: pd.Series, domain: str, ax: plt.Axes, ylim: float | None = None) -> None:
     sorted_std = rank_std.sort_values()
     ax.bar(range(len(sorted_std)), sorted_std.values, color="steelblue", width=1.0, linewidth=0)
     ax.set_xlabel("Item (sorted by stability)", fontsize=8)
     ax.set_ylabel("Rank std dev across languages", fontsize=8)
     ax.set_title(f"{domain.replace('_', ' ').title()}", fontsize=9)
     ax.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
+    if ylim is not None:
+        ax.set_ylim(0, ylim)
 
 
 def plot_language_dendrogram(diff_matrices: dict[str, pd.DataFrame], ax: plt.Axes) -> None:
@@ -222,8 +224,9 @@ def main() -> None:
 
     # --- Figure 3: Item rank stability per domain (2×3 grid) ---
     fig3, axes3 = plt.subplots(2, 3, figsize=(16, 7))
+    shared_ylim = max(stability[d].max() for d in DOMAINS) * 1.05
     for ax, domain in zip(axes3.flat, DOMAINS):
-        plot_item_stability(stability[domain], domain, ax)
+        plot_item_stability(stability[domain], domain, ax, ylim=shared_ylim)
     fig3.tight_layout()
     fig3.savefig(args.output_dir / "item_rank_stability.png", dpi=150, bbox_inches="tight")
     plt.close(fig3)

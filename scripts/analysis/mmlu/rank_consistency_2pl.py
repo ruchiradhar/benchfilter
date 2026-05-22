@@ -105,13 +105,15 @@ def plot_spearman_heatmap(corr_df: pd.DataFrame, domain: str, w: float, ax: plt.
     return im
 
 
-def plot_item_stability(rank_std: pd.Series, domain: str, ax: plt.Axes, param_label: str) -> None:
+def plot_item_stability(rank_std: pd.Series, domain: str, ax: plt.Axes, param_label: str, ylim: float | None = None) -> None:
     sorted_std = rank_std.sort_values()
     ax.bar(range(len(sorted_std)), sorted_std.values, color="steelblue", width=1.0, linewidth=0)
     ax.set_xlabel("Item (sorted)", fontsize=8)
     ax.set_ylabel("Rank std", fontsize=8)
     ax.set_title(f"{domain.replace('_', ' ').title()} [{param_label}]", fontsize=9)
     ax.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
+    if ylim is not None:
+        ax.set_ylim(0, ylim)
 
 
 def plot_language_dendrogram(diff_matrices: dict, disc_matrices: dict, ax: plt.Axes) -> None:
@@ -241,9 +243,13 @@ def main() -> None:
 
     # --- Figure 4: Item rank stability — diff (top) and disc (bottom) ---
     fig4, axes4 = plt.subplots(2, 6, figsize=(22, 7), sharey=False)
+    shared_ylim = max(
+        max(stab_diff[d].max() for d in DOMAINS),
+        max(stab_disc[d].max() for d in DOMAINS),
+    ) * 1.05
     for col, domain in enumerate(DOMAINS):
-        plot_item_stability(stab_diff[domain], domain, axes4[0, col], "diff")
-        plot_item_stability(stab_disc[domain], domain, axes4[1, col], "disc")
+        plot_item_stability(stab_diff[domain], domain, axes4[0, col], "diff", ylim=shared_ylim)
+        plot_item_stability(stab_disc[domain], domain, axes4[1, col], "disc", ylim=shared_ylim)
     axes4[0, 0].set_ylabel("Rank std (difficulty)", fontsize=8)
     axes4[1, 0].set_ylabel("Rank std (discrimination)", fontsize=8)
     fig4.tight_layout()

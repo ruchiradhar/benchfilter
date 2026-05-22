@@ -107,12 +107,14 @@ def plot_spearman_heatmap(corr_df: pd.DataFrame, w: float, langs: list[str],
     return im
 
 
-def plot_item_stability(rank_std: pd.Series, param_label: str, ax: plt.Axes) -> None:
+def plot_item_stability(rank_std: pd.Series, param_label: str, ax: plt.Axes, ylim: float | None = None) -> None:
     sorted_std = rank_std.sort_values()
     ax.bar(range(len(sorted_std)), sorted_std.values, color="steelblue", width=1.0, linewidth=0)
     ax.set_xlabel("Item (sorted by stability)", fontsize=9)
     ax.set_ylabel("Rank std dev", fontsize=9)
     ax.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
+    if ylim is not None:
+        ax.set_ylim(0, ylim)
 
 
 def plot_language_dendrogram(diff_df: pd.DataFrame, disc_df: pd.DataFrame,
@@ -217,9 +219,10 @@ def main() -> None:
 
     # --- Figure 5: Item rank stability (3 rows) ---
     fig5, (ax5a, ax5b, ax5c) = plt.subplots(3, 1, figsize=(10, 10))
-    plot_item_stability(stab_diff,  "difficulty",      ax5a)
-    plot_item_stability(stab_disc,  "discrimination",  ax5b)
-    plot_item_stability(stab_guess, "guessing",        ax5c)
+    shared_ylim = max(stab_diff.max(), stab_disc.max(), stab_guess.max()) * 1.05
+    plot_item_stability(stab_diff,  "difficulty",      ax5a, ylim=shared_ylim)
+    plot_item_stability(stab_disc,  "discrimination",  ax5b, ylim=shared_ylim)
+    plot_item_stability(stab_guess, "guessing",        ax5c, ylim=shared_ylim)
     fig5.tight_layout()
     fig5.savefig(args.output_dir / "item_rank_stability.png", dpi=150, bbox_inches="tight")
     plt.close(fig5)

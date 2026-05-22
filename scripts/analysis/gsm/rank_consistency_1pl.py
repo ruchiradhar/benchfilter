@@ -108,12 +108,14 @@ def plot_spearman_heatmap(corr_df: pd.DataFrame, w: float, langs: list[str], ax:
     return im
 
 
-def plot_item_stability(rank_std: pd.Series, ax: plt.Axes) -> None:
+def plot_item_stability(rank_std: pd.Series, ax: plt.Axes, ylim: float | None = None) -> None:
     sorted_std = rank_std.sort_values()
     ax.bar(range(len(sorted_std)), sorted_std.values, color="steelblue", width=1.0, linewidth=0)
     ax.set_xlabel("Item (sorted by stability)", fontsize=9)
     ax.set_ylabel("Rank std dev across languages", fontsize=9)
     ax.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
+    if ylim is not None:
+        ax.set_ylim(0, ylim)
 
 
 def plot_language_dendrogram(diff_df: pd.DataFrame, langs: list[str], ax: plt.Axes) -> None:
@@ -181,7 +183,8 @@ def main() -> None:
 
     # --- Figure 3: Item rank stability ---
     fig2, ax2 = plt.subplots(figsize=(10, 4))
-    plot_item_stability(rank_std, ax2)
+    shared_ylim = rank_std.max() * 1.05
+    plot_item_stability(rank_std, ax2, ylim=shared_ylim)
     fig2.tight_layout()
     fig2.savefig(args.output_dir / "item_rank_stability.png", dpi=150, bbox_inches="tight")
     plt.close(fig2)
