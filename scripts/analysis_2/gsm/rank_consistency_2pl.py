@@ -189,12 +189,9 @@ def main() -> None:
     bars = ax3.bar(param_labels, w_values, color="steelblue", edgecolor="white", width=0.4)
     ax3.set_ylim(0, 1)
     ax3.set_ylabel("Kendall's W")
-    ax3.axhline(0.7, color="orange", linestyle="--", linewidth=1, label="W = 0.7 (strong)")
-    ax3.axhline(0.5, color="red", linestyle="--", linewidth=1, label="W = 0.5 (moderate)")
     for bar, val in zip(bars, w_values):
         ax3.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
                  f"{val:.3f}", ha="center", va="bottom", fontsize=10)
-    ax3.legend(fontsize=8)
     fig3.tight_layout()
     fig3.savefig(args.output_dir / "kendalls_w.png", dpi=150, bbox_inches="tight")
     plt.close(fig3)

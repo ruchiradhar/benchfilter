@@ -170,12 +170,9 @@ def main() -> None:
     bars = ax2.bar(["Difficulty"], [w], color="steelblue", edgecolor="white", width=0.4)
     ax2.set_ylim(0, 1)
     ax2.set_ylabel("Kendall's W")
-    ax2.axhline(0.7, color="orange", linestyle="--", linewidth=1, label="W = 0.7 (strong)")
-    ax2.axhline(0.5, color="red", linestyle="--", linewidth=1, label="W = 0.5 (moderate)")
     for bar, val in zip(bars, [w]):
         ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
                  f"{val:.3f}", ha="center", va="bottom", fontsize=10)
-    ax2.legend(fontsize=8)
     fig2.tight_layout()
     fig2.savefig(args.output_dir / "kendalls_w.png", dpi=150, bbox_inches="tight")
     plt.close(fig2)

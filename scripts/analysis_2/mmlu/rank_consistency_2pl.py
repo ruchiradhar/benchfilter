@@ -230,12 +230,9 @@ def main() -> None:
     ax3.set_xticklabels(domain_labels)
     ax3.set_ylim(0, 1)
     ax3.set_ylabel("Kendall's W")
-    ax3.axhline(0.7, color="red", linestyle="--", linewidth=1, label="W = 0.7")
-    ax3.axhline(0.5, color="orange", linestyle="--", linewidth=1, label="W = 0.5")
     for bar in list(bars1) + list(bars2):
         ax3.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
                  f"{bar.get_height():.2f}", ha="center", va="bottom", fontsize=7)
-    ax3.legend(fontsize=8)
     fig3.tight_layout()
     fig3.savefig(args.output_dir / "kendalls_w.png", dpi=150, bbox_inches="tight")
     plt.close(fig3)
