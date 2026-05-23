@@ -214,7 +214,7 @@ The 1PL model uses dropout ($p = 0.5$) and vague priors as implemented in \textt
 
 \subsection{IRT Analysis}
 
-We conduct two sets of experiments to assess whether IRT parameters are consistent across language versions of these benchmarks.
+We conduct two sets of experiments to assess whether IRT parameters are consistent across language versions of these benchmarks \footnote{All code and data will be released upon publication.}.
 
 \textbf{Cross-lingual Consistency Analysis} (§\ref{sec:cross_lingual}) examines whether item parameters are stable across languages using four measures:
 (i)~Kendall's $W \in [0,1]$, the coefficient of concordance across all $|\mathcal{L}|$ languages simultaneously ($W=1$: identical item rankings; $W\approx 0$: chance);
@@ -421,7 +421,7 @@ typological structure.
 
 \paragraph{IIF Concordance}
 
-We examine whether the three IRT variants agree on which items are most informative, a choice with direct consequences for the validity of any resulting cross-lingual subset (within-language fit comparisons are in \autoref{app:elbo}). Agreement is operationalised via the Item Information Function (IIF) at $\theta=0$; a sensitivity analysis at $\theta \in \{-1, 0, +1\}$ confirms that the qualitative orderings are robust to this choice (\autoref{app:theta}): 
+We examine whether the three IRT variants agree on which items are most informative, a choice with direct consequences for the validity of any resulting cross-lingual subset (within-language fit comparisons are in \autoref{app:withinlangfits}). Agreement is operationalised via the Item Information Function (IIF) at $\theta=0$; a sensitivity analysis at $\theta \in \{-1, 0, +1\}$ confirms that the qualitative orderings are robust to this choice (\autoref{app:theta}): 
 \begin{align}
   I_j^{(1\text{PL})} &= P_j\,(1 - P_j), \label{eq:iif1pl} \\
   I_j^{(2\text{PL})} &= a_j^2\, P_j\,(1 - P_j), \label{eq:iif2pl} \\
@@ -433,7 +433,7 @@ parameters; $P_j^{(1\text{PL})} = \sigma(-b_j)$;
 $P_j^{(2\text{PL})} = \sigma(a_j(-b_j))$;
 $P_j^{(3\text{PL})} = c_j + (1-c_j)\,\sigma(a_j(-b_j))$.
 Per slice, items are ranked by $I_j$ and the top 50\% retained
-(avg.\ 125 items per MGSM slice; 33 per MMLU slice); pairwise agreement is
+(avg.\ 125 items per MGSM slice; 33 per MMLU slice; sensitivity to this threshold in \autoref{app:compression}); pairwise agreement is
 measured by Jaccard similarity $J(A,B) = |A \cap B|/|A \cup B|$, with an
 expected baseline of $J \approx 0.33$ for two independent random draws
 (\autoref{fig:iif_concordance}).Across both benchmarks, 1PL--2PL agreement (median $J = 0.40$ for MGSM, $J = 0.53$ for MMLU) and 1PL--3PL (median $J = 0.41$ for MGSM, $J = 0.45$ for MMLU) both exceed the random-selection baseline ($J \approx 0.33$). 2PL--3PL shows the strongest concordance overall (median $J = 0.92$ for MGSM, $J = 0.59$ for MMLU), confirming that 2PL and 3PL agree very strongly with each other on which items are most informative. MMLU shows lower 2PL--3PL concordance, reflecting greater variation across the heterogeneous domain slices. 
@@ -490,8 +490,7 @@ benchmark. We evaluate four conditions: (i)~in-sample same-language; (ii)~held-o
 same-language (IRT fitted on 80\% of models, evaluated on held-out 20\%);
 (iii)~in-sample cross-lingual; and (iv)~held-out cross-lingual. The primary metric is
 Spearman $\rho$ between per-model subset accuracy and full-benchmark accuracy,
-compared against a 200-draw random-item baseline (\autoref{fig:heldout_vs_insample}). Under 1PL, same-language fidelity is high and stable across both splits: in-sample median $\rho = 0.982$ (MGSM) and $1.000$ (MMLU), dropping only marginally on held-out models ($0.972$ and $1.000$), well above the random baselines. On MGSM, 2PL and 3PL also preserve strong held-out fidelity ($\rho = 0.953$ and $0.951$), showing that with stable parameter estimation all three variants are viable. On MMLU, fidelity degrades progressively with model complexity: 2PL held-out median $\rho = 0.828$ and 3PL $\rho = 0.691$, with 3PL showing the widest spread and
-several low-fidelity slices.
+compared against a 200-draw random-item baseline (\autoref{fig:heldout_vs_insample}). Under 1PL, same-language fidelity is high and stable across both splits: in-sample median $\rho = 0.982$ (MGSM) and $1.000$ (MMLU), dropping only marginally on held-out models ($0.972$ and $1.000$), well above the random baselines. On MGSM, 2PL and 3PL also preserve strong held-out fidelity ($\rho = 0.953$ and $0.951$), showing that with stable parameter estimation all three variants are viable. On MMLU, fidelity degrades progressively with model complexity: 2PL held-out median $\rho = 0.828$ and 3PL $\rho = 0.691$, with 3PL showing the widest spread and several low-fidelity slices (per-slice distributions and accuracy scatter plots in Appendix~\ref{app:ranking_fidelity}).
 
 To isolate which parameter drives this degradation, \autoref{tab:param_decomp}
 decomposes fidelity by applying progressively richer IIF formulas, also shown in \autoref{fig:param_decomp}: on MGSM all six strategies yield near-identical fidelity, confirming that difficulty alone drives the signal; on MMLU fidelity drops monotonically with each parameter added, with discrimination causing the largest single step down. Selecting items by \textit{difficulty alone} preserves high fidelity across both benchmarks regardless of which PL model fitted it (MGSM held-out: $\rho \approx 0.97$; MMLU held-out: $0.89$--$0.93$). Adding \textit{discrimination} introduces the primary degradation: $-0.017$--$0.022$ on MGSM and $-0.101$--$0.111$ on MMLU held-out, consistent with discrimination being language-idiosyncratic. Adding \textit{guessing} further reduces MMLU held-out fidelity by $0.087$ ($0.778 \to 0.691$) while leaving MGSM virtually unchanged ($0.950 \to 0.951$). Together, it is not model complexity per se but the \textit{discrimination} parameter that drives fidelity loss, and difficulty-based or 1PL selection remains the safest cross-lingual strategy.

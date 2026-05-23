@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-MAP-based IRT fitting for 2PL and 3PL using direct gradient descent.
+MAP-based IRT fitting for 1PL, 2PL, and 3PL using direct gradient descent.
 
 Replaces py-irt's SVI for 2PL/3PL, which collapses discrimination parameters
-toward zero. Key differences:
+toward zero. Also provides a MAP-1PL variant for inference-method comparisons.
+Key differences:
   - Discrimination constrained positive via softplus (a = softplus(raw_a))
   - Guessing (3PL) constrained to [0,1] via sigmoid
   - Joint MAP objective (log-likelihood + Normal priors) optimised with Adam
@@ -13,6 +14,7 @@ Output format is identical to py-irt so all downstream analysis scripts work
 unchanged.
 
 Usage:
+    python scripts/irt/irt_map.py --model 1pl
     python scripts/irt/irt_map.py --model 2pl
     python scripts/irt/irt_map.py --model 3pl
     python scripts/irt/irt_map.py --model 2pl --output_dir results/2PL_map
@@ -38,6 +40,26 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 def _softplus_inv(x: float) -> float:
     """Inverse softplus: find raw such that softplus(raw) = x."""
     return float(np.log(np.exp(x) - 1))
+
+
+class OnePL(torch.nn.Module):
+    """1PL (Rasch) IRT: P = sigmoid(theta_i - b_j)."""
+
+    def __init__(self, n_subjects: int, n_items: int, device: torch.device) -> None:
+        super().__init__()
+        self.theta = torch.nn.Parameter(torch.zeros(n_subjects, device=device))
+        self.b = torch.nn.Parameter(torch.zeros(n_items, device=device))
+
+    def log_likelihood(
+        self, subjects: torch.Tensor, items: torch.Tensor, responses: torch.Tensor
+    ) -> torch.Tensor:
+        logits = self.theta[subjects] - self.b[items]
+        return -F.binary_cross_entropy_with_logits(logits, responses, reduction="sum")
+
+    def log_prior(self) -> torch.Tensor:
+        lp = -0.5 * (self.theta ** 2).sum()
+        lp += -0.5 * (self.b ** 2).sum()
+        return lp
 
 
 class TwoPL(torch.nn.Module):
@@ -207,7 +229,12 @@ def fit(
     i_idx = torch.arange(n_i, device=device).repeat(n_s)
     resp = R.flatten()
 
-    model_cls = TwoPL if model_name == "2pl" else ThreePL
+    if model_name == "1pl":
+        model_cls = OnePL
+    elif model_name == "2pl":
+        model_cls = TwoPL
+    else:
+        model_cls = ThreePL
 
     best_model: torch.nn.Module
     best_loss = float("inf")
@@ -223,17 +250,17 @@ def fit(
     with torch.no_grad():
         ability = best_model.theta.cpu().tolist()  # type: ignore[union-attr]
         diff = best_model.b.cpu().tolist()          # type: ignore[union-attr]
-        disc = best_model.a.cpu().tolist()          # type: ignore[union-attr]
 
-    # py-irt stores ids as {"0": "item_0", ...} dicts — match that format
     out: dict = {
         "ability": ability,
         "diff": diff,
-        "disc": disc,
         "irt_model": model_name,
         "item_ids": {str(i): v for i, v in enumerate(item_ids)},
         "subject_ids": {str(i): v for i, v in enumerate(subject_ids)},
     }
+    if model_name in ("2pl", "3pl"):
+        with torch.no_grad():
+            out["disc"] = best_model.a.cpu().tolist()  # type: ignore[union-attr]
     if model_name == "3pl":
         with torch.no_grad():
             out["lambdas"] = best_model.c.cpu().tolist()  # type: ignore[union-attr]
@@ -245,7 +272,7 @@ def fit(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="MAP-based 2PL/3PL IRT fitting.")
-    parser.add_argument("--model", choices=["2pl", "3pl"], required=True)
+    parser.add_argument("--model", choices=["1pl", "2pl", "3pl"], required=True)
     parser.add_argument("--data_dir", type=Path, default=Path("data/irt"))
     parser.add_argument("--output_dir", type=Path, default=None,
                         help="Defaults to results/2PL_map or results/3PL_map")
@@ -264,13 +291,13 @@ def parse_args() -> argparse.Namespace:
     args.log_dir = resolve(args.log_dir)
 
     if args.output_dir is None:
-        label = "2PL_map" if args.model == "2pl" else "3PL_map"
+        label = {"1pl": "1PL_map", "2pl": "2PL_map", "3pl": "3PL_map"}[args.model]
         args.output_dir = PROJECT_ROOT / "results" / label
     else:
         args.output_dir = resolve(args.output_dir)
 
     if args.epochs is None:
-        args.epochs = 4000 if args.model == "2pl" else 6000
+        args.epochs = {"1pl": 2000, "2pl": 4000, "3pl": 6000}[args.model]
 
     return args
 
