@@ -207,7 +207,11 @@ __marimo__/
 
 # Paper files
 acl_latex.tex
+acl_latex_2.tex
 custom.bib
 data/
 extra_spanish/
+
+# macOS
+.DS_Store
 
