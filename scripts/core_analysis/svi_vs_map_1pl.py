@@ -3,7 +3,7 @@
 Compare SVI-1PL and MAP-1PL difficulty estimates across all benchmark slices.
 
 Produces:
-  images_2/svi_vs_map_1pl_scatter.pdf  — per-slice Spearman ρ distribution
+  images/svi_vs_map_1pl_scatter.pdf  — per-slice Spearman ρ distribution
                                          + representative scatter panels
   stdout summary: mean/min/max Spearman ρ across all 53 slices
 
@@ -25,7 +25,7 @@ from scipy.stats import spearmanr
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SVI_DIR = PROJECT_ROOT / "results" / "1PL"
 MAP_DIR = PROJECT_ROOT / "results" / "1PL_map"
-OUT_DIR = PROJECT_ROOT / "images_2"
+OUT_DIR = PROJECT_ROOT / "images"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 

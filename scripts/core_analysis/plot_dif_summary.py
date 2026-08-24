@@ -16,7 +16,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH = PROJECT_ROOT / "results" / "core_analysis" / "dif_anchor" / "dif_anchor_summary.csv"
-OUT_PATH = PROJECT_ROOT / "images_2" / "dif_summary.png"
+OUT_PATH = PROJECT_ROOT / "results" / "core_analysis" / "dif_anchor" / "dif_summary.png"
 
 BAR_COLOR = "steelblue"
 LINE_COLOR = "darkorange"

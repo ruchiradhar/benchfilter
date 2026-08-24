@@ -3,7 +3,7 @@
 Compare SVI vs MAP difficulty and discrimination estimates for 2PL and 3PL.
 
 Produces:
-  images_2/svi_vs_map_2pl_3pl.pdf  — per-parameter ρ distributions + scatter panels
+  images/svi_vs_map_2pl_3pl.pdf  — per-parameter ρ distributions + scatter panels
                                       showing discrimination collapse under SVI
 
 Usage:
@@ -23,7 +23,7 @@ import numpy as np
 from scipy.stats import spearmanr
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = PROJECT_ROOT / "images_2"
+OUT_DIR = PROJECT_ROOT / "images"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 

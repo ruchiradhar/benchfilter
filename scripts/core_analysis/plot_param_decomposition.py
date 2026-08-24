@@ -14,7 +14,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH  = PROJECT_ROOT / "results" / "core_analysis" / "param_decomposition" / "summary.csv"
-OUT_PATH  = PROJECT_ROOT / "images_2" / "param_decomposition.png"
+OUT_PATH  = PROJECT_ROOT / "results" / "core_analysis" / "param_decomposition" / "param_decomposition.png"
 
 STRATEGY_ORDER = [
     "1PL (diff)",

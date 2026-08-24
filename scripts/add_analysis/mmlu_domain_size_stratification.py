@@ -15,7 +15,7 @@ it reflects genuine language-specificity, not estimation noise.
 
 Outputs:
   stdout:                     W and rho table
-  images_2/domain_size_stratification.png — bar chart of W by size group
+  results/add_analysis/mmlu_domain_size_stratification/domain_size_stratification.png — bar chart of W by size group
 
 Usage:
     python scripts/add_analysis/mmlu_domain_size_stratification.py
@@ -35,7 +35,7 @@ from scipy.stats import spearmanr
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RESULTS = PROJECT_ROOT / "results"
-OUT_DIR = PROJECT_ROOT / "images_2"
+OUT_DIR = PROJECT_ROOT / "results" / "add_analysis" / "mmlu_domain_size_stratification"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 LANGUAGES = ["de", "en", "es", "fr", "ja", "sw", "zh"]

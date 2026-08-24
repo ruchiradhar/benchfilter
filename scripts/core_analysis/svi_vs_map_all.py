@@ -8,7 +8,7 @@ Layout (2 rows x 3 cols of ρ histograms + 3 illustrative scatter panels):
   Row 3: scatter (1PL diff, high ρ) | scatter (2PL disc, collapsed) | scatter (3PL disc, collapsed)
 
 Produces:
-  images_2/svi_vs_map_all.pdf
+  results/core_analysis/svi_vs_map_all/svi_vs_map_all.png
 
 Usage:
     python scripts/core_analysis/svi_vs_map_all.py
@@ -27,7 +27,7 @@ import numpy as np
 from scipy.stats import spearmanr
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = PROJECT_ROOT / "images_2"
+OUT_DIR = PROJECT_ROOT / "results" / "core_analysis" / "svi_vs_map_all"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 RESULTS = PROJECT_ROOT / "results"
