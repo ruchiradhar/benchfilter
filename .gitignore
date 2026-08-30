@@ -212,6 +212,10 @@ custom.bib
 data/
 extra_spanish/
 
+# Shell scripts (cluster job scripts often carry hardcoded paths/tokens;
+# review and `git add -f` deliberately if a new one needs to be tracked)
+*.sh
+
 # macOS
 .DS_Store
 

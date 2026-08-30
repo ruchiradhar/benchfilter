@@ -51,7 +51,9 @@ dependencies:
   - charset-normalizer=3.4.4=pyhd8ed1ab_0
   - colorama=0.4.6=pyhd8ed1ab_1
   - comm=0.2.3=pyhe01879c_0
+  - contourpy=1.3.2=py310h7f4e7e6_0
   - cpython=3.10.19=py310hd8ed1ab_2
+  - cycler=0.12.1=pyhcf101f3_2
   - datasets=4.4.1=pyhcf101f3_0
   - debugpy=1.8.17=py310h7b404bc_0
   - decorator=5.2.1=pyhd8ed1ab_0
@@ -60,7 +62,9 @@ dependencies:
   - exceptiongroup=1.3.0=pyhd8ed1ab_0
   - executing=2.2.1=pyhd8ed1ab_0
   - filelock=3.20.0=pyhd8ed1ab_0
+  - fonttools=4.62.1=py310hb46c203_0
   - fqdn=1.5.1=pyhd8ed1ab_1
+  - freetype=2.14.1=hce30654_0
   - frozenlist=1.7.0=py310ha18c8e3_0
   - fsspec=2025.10.0=pyhd8ed1ab_0
   - gflags=2.2.2=hf9b8971_1005
@@ -102,6 +106,7 @@ dependencies:
   - jupyterlab_pygments=0.3.0=pyhd8ed1ab_2
   - jupyterlab_server=2.28.0=pyhcf101f3_0
   - jupyterlab_widgets=3.0.16=pyhcf101f3_1
+  - kiwisolver=1.5.0=py310h34990b0_0
   - krb5=1.21.3=h237132a_0
   - lcms2=2.17=h7eeda09_0
   - lerc=4.0.0=hd64df32_1
@@ -159,6 +164,8 @@ dependencies:
   - llvm-openmp=15.0.7=h7cfbb63_0
   - lz4-c=1.10.0=h286801f_1
   - markupsafe=3.0.3=py310hf4fd40f_0
+  - matplotlib=3.10.8=py310hb6292c7_0
+  - matplotlib-base=3.10.8=py310h0181960_0
   - matplotlib-inline=0.2.1=pyhd8ed1ab_0
   - mistune=3.1.4=pyhcf101f3_0
   - mpc=1.3.1=h8f1351a_1
@@ -166,6 +173,7 @@ dependencies:
   - mpmath=1.3.0=pyhd8ed1ab_1
   - multidict=6.6.3=py310hdf261b0_0
   - multiprocess=0.70.18=py310hf151d32_2
+  - munkres=1.1.4=pyhd8ed1ab_1
   - nbclient=0.10.2=pyhd8ed1ab_0
   - nbconvert-core=7.16.6=pyhcf101f3_1
   - nbformat=5.10.4=pyhd8ed1ab_1
@@ -207,6 +215,7 @@ dependencies:
   - pygments=2.19.2=pyhd8ed1ab_0
   - pyobjc-core=12.0=py310h4f0a512_0
   - pyobjc-framework-cocoa=12.0=py310h9947ce4_0
+  - pyparsing=3.3.2=pyhcf101f3_0
   - pyro-api=0.1.2=pyhd8ed1ab_0
   - pyro-ppl=1.9.1=pyhd8ed1ab_1
   - pysocks=1.7.1=pyha55dd90_7
@@ -221,6 +230,7 @@ dependencies:
   - pytz=2025.2=pyhd8ed1ab_0
   - pyyaml=6.0.3=py310hf4fd40f_0
   - pyzmq=27.1.0=py310hc4a7dca_0
+  - qhull=2020.2=h420ef59_5
   - re2=2025.11.05=h64b956e_0
   - readline=8.2=h1d1bf99_2
   - referencing=0.37.0=pyhcf101f3_0
@@ -256,6 +266,7 @@ dependencies:
   - typing_extensions=4.15.0=pyhcf101f3_0
   - typing_utils=0.1.0=pyhd8ed1ab_1
   - tzdata=2025b=h78e105d_0
+  - unicodedata2=17.0.1=py310h72544b6_0
   - uri-template=1.3.0=pyhd8ed1ab_1
   - urllib3=2.5.0=pyhd8ed1ab_0
   - wcwidth=0.2.14=pyhd8ed1ab_0
