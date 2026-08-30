@@ -9,24 +9,25 @@
 
 #SBATCH --job-name=evaluate_models_gsm_150-200                                                                                                                            
 
-#SBATCH -o /home/nwq388/projects/benchfilter/logs/benchmarks/log-%j.%x.out                  
+#SBATCH -o logs/benchmarks/log-%j.%x.out
 
 #SBATCH --ntasks=1
 
-#We expect that our program should not run longer than 2 days 
+#We expect that our program should not run longer than 2 days
 #Note that a program will be killed once it exceeds this time!
 #SBATCH --time=2-00:00:00
 
-# mail alert at start, end and abortion of execution   
+# mail alert at start, end and abortion of execution
 ##SBATCH --mail-type=ALL
 
 # send mail to this address
 
-#Skipping many options! see man sbatch 
+#Skipping many options! see man sbatch
 # From here on, we can start our program
 
-# setting HF token
-export HF_TOKEN=***REMOVED-HF-TOKEN***
+# HF_TOKEN must be set in your environment before running this script, e.g.:
+#   export HF_TOKEN=hf_your_token_here
+: "${HF_TOKEN:?HF_TOKEN is not set. Export it before running this script.}"
 
 . /etc/profile.d/modules.sh
 module load anaconda3/5.3.1
