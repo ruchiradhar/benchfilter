@@ -40,7 +40,7 @@ benchfilter/
     │   └── compute_elbo.py
     └── core_analysis/            # Analysis scripts producing the paper's reported statistics
         ├── gsm/, mmlu/           # per-benchmark rank-consistency / science-domain scripts
-        ├── cross_model_concordance.py, cross_model_iif_concordance.py
+        ├── accuracy_irt_alignment.py, cross_model_concordance.py, cross_model_iif_concordance.py
         ├── dif_anchor.py, plot_dif_summary.py
         ├── param_decomposition.py, crosslingual_param_decomposition.py, plot_param_decomposition.py
         ├── subset_ranking_fidelity.py, subset_ranking_fidelity_map.py
